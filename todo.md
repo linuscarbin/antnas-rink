@@ -35,9 +35,9 @@
 - [x] Konfliktlarm till admin när någon flaggar förhinder
 
 ## Deployment
-- [ ] Dockerfile för självhosting
-- [ ] Coolify-konfiguration (docker-compose / env)
-- [ ] README med deploy-instruktioner och env-variabler
+- [x] Dockerfile för självhosting
+- [x] Coolify-konfiguration (docker-compose / env-mall)
+- [x] README med deploy-instruktioner och env-variabler
 - [ ] Privat GitHub-repo (antnas-rink)
 
 ## Test
@@ -46,11 +46,11 @@
 - [x] Vitest för ISO-vecka och zon-konstanter
 
 ## Fristående (ingen Manus-hosting)
-- [ ] Egen e-post + lösenord-inloggning (bcrypt + JWT-cookie)
-- [ ] Registrering + första ägaren blir admin
-- [ ] Auth-router: register, login, logout, me
-- [ ] Ta bort Manus OAuth-rutter och beroenden
-- [ ] Ersätt Heartbeat-cron med självhostad node-cron i containern
-- [ ] Ta bort Manus notification/storage-anrop och env-beroenden
-- [ ] Rensa env-mall från Manus-variabler
-- [ ] Uppdatera tester för ny auth
+- [x] Egen e-post + lösenord-inloggning (bcrypt + JWT-cookie)
+- [x] Registrering + första ägaren blir admin
+- [x] Auth-router: register, login, logout, me, changePassword
+- [x] Ta bort Manus OAuth-rutter och beroenden
+- [x] Ersätt Heartbeat-cron med självhostad node-cron i containern
+- [x] Ta bort Manus notification/storage-anrop och env-beroenden
+- [x] Rensa env-mall från Manus-variabler
+- [x] Uppdatera tester för ny auth (20 tester gröna)

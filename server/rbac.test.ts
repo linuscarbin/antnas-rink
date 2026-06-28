@@ -7,11 +7,10 @@ type U = NonNullable<TrpcContext["user"]>;
 function baseUser(role: "user" | "admin"): U {
   return {
     id: role === "admin" ? 1 : 2,
-    openId: `open-${role}`,
     email: `${role}@example.com`,
+    passwordHash: "x",
     name: role,
     phone: null,
-    loginMethod: "manus",
     role,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -23,7 +22,10 @@ function ctx(user: U | null): TrpcContext {
   return {
     user,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
-    res: { clearCookie: () => {} } as unknown as TrpcContext["res"],
+    res: {
+      clearCookie: () => {},
+      cookie: () => {},
+    } as unknown as TrpcContext["res"],
   };
 }
 
@@ -55,5 +57,18 @@ describe("RBAC", () => {
         endTime: Date.now() + 3600000,
       })
     ).rejects.toThrow();
+  });
+
+  it("returns null from auth.me for anonymous", async () => {
+    const caller = appRouter.createCaller(ctx(null));
+    await expect(caller.auth.me()).resolves.toBeNull();
+  });
+
+  it("returns sanitized user (no passwordHash) from auth.me", async () => {
+    const caller = appRouter.createCaller(ctx(baseUser("admin")));
+    const me = await caller.auth.me();
+    expect(me).not.toBeNull();
+    expect((me as Record<string, unknown>).passwordHash).toBeUndefined();
+    expect(me?.role).toBe("admin");
   });
 });

@@ -1,6 +1,5 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { ENV } from "../_core/env";
 import * as db from "../db";
 import {
   adminProcedure,
@@ -52,12 +51,6 @@ export const usersRouter = router({
       const target = await db.getUserById(input.id);
       if (!target) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Användare hittades inte." });
-      }
-      if (target.openId === ENV.ownerOpenId && input.role !== "admin") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Ägaren kan inte fråntas adminbehörighet.",
-        });
       }
       if (target.id === ctx.user.id && input.role !== "admin") {
         throw new TRPCError({

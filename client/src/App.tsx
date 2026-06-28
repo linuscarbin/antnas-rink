@@ -9,6 +9,7 @@ import Anslagstavla from "./pages/Anslagstavla";
 import Boka from "./pages/Boka";
 import Home from "./pages/Home";
 import Kontakt from "./pages/Kontakt";
+import Login from "./pages/Login";
 import Profil from "./pages/Profil";
 import Schema from "./pages/Schema";
 
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/boka" component={Boka} />
       <Route path="/anslagstavla" component={Anslagstavla} />
       <Route path="/kontakt" component={Kontakt} />
+      <Route path="/login" component={Login} />
       <Route path="/profil" component={Profil} />
       <Route path="/admin" component={Admin} />
       <Route path="/404" component={NotFound} />

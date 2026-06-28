@@ -73,7 +73,54 @@ export default function Profil() {
             Spara
           </Button>
         </div>
+
+        <PasswordCard />
       </div>
     </SiteLayout>
+  );
+}
+
+function PasswordCard() {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const change = trpc.auth.changePassword.useMutation({
+    onSuccess: () => {
+      setCurrent("");
+      setNext("");
+      toast.success("Lösenord uppdaterat.");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  return (
+    <div className="iso-card p-6 mt-6 space-y-4">
+      <h2 className="font-extrabold text-lg">Byt lösenord</h2>
+      <div className="space-y-1.5">
+        <Label>Nuvarande lösenord</Label>
+        <Input
+          type="password"
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label>Nytt lösenord</Label>
+        <Input
+          type="password"
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+          placeholder="Minst 8 tecken"
+        />
+      </div>
+      <Button
+        variant="outline"
+        className="w-full bg-card font-semibold"
+        onClick={() =>
+          change.mutate({ currentPassword: current, newPassword: next })
+        }
+        disabled={change.isPending || !current || next.length < 8}
+      >
+        Uppdatera lösenord
+      </Button>
+    </div>
   );
 }

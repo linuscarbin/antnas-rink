@@ -15,6 +15,13 @@
       "when": 1782671703789,
       "tag": "0001_hot_grim_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1782673575101,
+      "tag": "0002_lowly_magdalene",
+      "breakpoints": true
     }
   ]
 }

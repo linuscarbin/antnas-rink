@@ -1,18 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { Bell, StickyNote } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-
-// Map a simple weekday/time picker to a 6-field UTC cron.
-function buildCron(weekday: number, hour: number) {
-  // sec min hour dom mon dow  (UTC)
-  return `0 0 ${hour} * * ${weekday}`;
-}
 
 export default function AdminSettings() {
   const utils = trpc.useUtils();
@@ -24,9 +17,6 @@ export default function AdminSettings() {
     if (statusQuery.data) setNote(statusQuery.data.note ?? "");
   }, [statusQuery.data]);
 
-  const [weekday, setWeekday] = useState(1); // Monday
-  const [hour, setHour] = useState(6); // 06:00 UTC ~ 07/08 svensk tid
-
   const setNoteMut = trpc.status.setNote.useMutation({
     onSuccess: () => {
       utils.status.get.invalidate();
@@ -34,31 +24,19 @@ export default function AdminSettings() {
     },
     onError: (e) => toast.error(e.message),
   });
-  const setReminder = trpc.schedule.setReminder.useMutation({
-    onSuccess: () => {
-      utils.schedule.get.invalidate();
-      toast.success("Påminnelse aktiverad.");
-    },
-    onError: (e) => toast.error(e.message),
-  });
-  const disableReminder = trpc.schedule.disableReminder.useMutation({
-    onSuccess: () => {
-      utils.schedule.get.invalidate();
-      toast.success("Påminnelse avstängd.");
+  const runNow = trpc.schedule.runNow.useMutation({
+    onSuccess: (r) => {
+      toast.success(
+        r.sent > 0
+          ? `Skickade ${r.sent} påminnelse(r).`
+          : "Inga mottagare att påminna denna vecka."
+      );
     },
     onError: (e) => toast.error(e.message),
   });
 
   const reminderOn = scheduleQuery.data?.enabled;
-  const weekdays = [
-    { v: 1, l: "Måndag" },
-    { v: 2, l: "Tisdag" },
-    { v: 3, l: "Onsdag" },
-    { v: 4, l: "Torsdag" },
-    { v: 5, l: "Fredag" },
-    { v: 6, l: "Lördag" },
-    { v: 0, l: "Söndag" },
-  ];
+  const cronExpr = scheduleQuery.data?.cron;
 
   return (
     <div className="grid gap-6 lg:grid-cols-2 max-w-4xl">
@@ -92,63 +70,47 @@ export default function AdminSettings() {
           <h3 className="font-extrabold text-lg">Jourpåminnelse via e-post</h3>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Skickar automatiskt e-post till veckans plog- och spoljour (de som är
-          kopplade som medlem).
+          Servern skickar automatiskt e-post till veckans plog- och spoljour (de
+          som är kopplade som medlem med e-post).
         </p>
 
-        <div className="mt-4 flex items-center justify-between rounded-lg border border-border/70 p-3">
-          <span className="font-semibold">
-            {reminderOn ? "Påminnelse är aktiv" : "Påminnelse är avstängd"}
-          </span>
-          <Switch
-            checked={Boolean(reminderOn)}
-            onCheckedChange={(checked) => {
-              if (checked) {
-                setReminder.mutate({ cron: buildCron(weekday, hour) });
-              } else {
-                disableReminder.mutate();
-              }
-            }}
-          />
+        <div className="mt-4 rounded-lg border border-border/70 p-3 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold">Status</span>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                reminderOn
+                  ? "bg-primary/15 text-primary"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {reminderOn ? "Aktiv" : "Avstängd"}
+            </span>
+          </div>
+          <div className="mt-2 text-muted-foreground">
+            Schema styrs av miljövariabeln{" "}
+            <code className="rounded bg-muted px-1 py-0.5">DUTY_REMINDER_CRON</code>{" "}
+            i Coolify.
+            {cronExpr ? (
+              <>
+                {" "}Nuvarande: <code className="rounded bg-muted px-1 py-0.5">{cronExpr}</code>{" "}
+                (serverns tidszon).
+              </>
+            ) : null}
+          </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>Veckodag</Label>
-            <select
-              className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-              value={weekday}
-              onChange={(e) => setWeekday(Number(e.target.value))}
-            >
-              {weekdays.map((w) => (
-                <option key={w.v} value={w.v}>
-                  {w.l}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Timme (UTC)</Label>
-            <Input
-              type="number"
-              min={0}
-              max={23}
-              value={hour}
-              onChange={(e) => setHour(Number(e.target.value))}
-            />
-          </div>
-        </div>
         <Button
           variant="outline"
           className="mt-3 w-full bg-card font-semibold"
-          onClick={() => setReminder.mutate({ cron: buildCron(weekday, hour) })}
-          disabled={setReminder.isPending}
+          onClick={() => runNow.mutate()}
+          disabled={runNow.isPending}
         >
-          {reminderOn ? "Uppdatera tidpunkt" : "Aktivera påminnelse"}
+          Skicka påminnelse nu (denna vecka)
         </Button>
         <p className="mt-2 text-xs text-muted-foreground">
-          Obs: kräver att appen är driftsatt och att Resend är konfigurerat.
-          Tider anges i UTC (svensk tid är UTC+1/+2).
+          Kräver att Resend (RESEND_API_KEY) är konfigurerat. Standard:
+          måndagar 07:00 serverns tid.
         </p>
       </div>
     </div>
