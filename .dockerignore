@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.gitignore
+.manus-logs
+*.log
+.env
+.env.*
+.DS_Store
+client/public/__manus__
+npm-debug.log*
+pnpm-debug.log*
+README.md
+todo.md

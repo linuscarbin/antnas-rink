@@ -7,4 +7,9 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  // Email (Resend) — used for duty reminders and conflict alerts.
+  resendApiKey: process.env.RESEND_API_KEY ?? "",
+  mailFrom: process.env.MAIL_FROM ?? "Antnäs Hockeyrink <onboarding@resend.dev>",
+  // Public site base URL (used in email links). Optional.
+  publicBaseUrl: process.env.PUBLIC_BASE_URL ?? "",
 };

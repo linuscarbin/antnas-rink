@@ -1,0 +1,42 @@
+# Docker Compose för Antnäs Hockeyrink.
+# Användbart för lokal provkörning och som referens vid Coolify-deploy.
+# I Coolify kan du peka direkt på Dockerfile och låta Coolify hantera nätverk/proxy.
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: antnas
+      MYSQL_USER: antnas
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-changeme}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-changeme-root}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: mysql://antnas:${MYSQL_PASSWORD:-changeme}@db:3306/antnas
+      JWT_SECRET: ${JWT_SECRET:-please-change-me}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-Antnäs Hockeyrink <onboarding@resend.dev>}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:
