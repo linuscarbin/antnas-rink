@@ -54,31 +54,46 @@ export function registerUploads(app: Express) {
         if (!req.file) {
           return res.status(400).json({ error: "Ingen fil." });
         }
-        if (!req.file.mimetype.startsWith("image/")) {
-          return res.status(400).json({ error: "Endast bilder tillåts." });
+        const isImage = req.file.mimetype.startsWith("image/");
+        const isPdf = req.file.mimetype === "application/pdf";
+        if (!isImage && !isPdf) {
+          return res
+            .status(400)
+            .json({ error: "Endast bilder och PDF tillåts." });
         }
 
-        // Re-encode + downscale as webp (strips metadata, caps size).
-        const webp = await sharp(req.file.buffer)
-          .rotate()
-          .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
-          .webp({ quality: 82 })
-          .toBuffer();
+        let buffer: Buffer;
+        let ext: string;
+        let contentType: string;
+        if (isImage) {
+          // Re-encode + downscale as webp (strips metadata, caps size).
+          buffer = await sharp(req.file.buffer)
+            .rotate()
+            .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+            .webp({ quality: 82 })
+            .toBuffer();
+          ext = "webp";
+          contentType = "image/webp";
+        } else {
+          buffer = req.file.buffer;
+          ext = "pdf";
+          contentType = "application/pdf";
+        }
 
-        const filename = `${Date.now()}-${randomUUID().slice(0, 8)}.webp`;
+        const filename = `${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
 
         // Prefer Cloudflare R2 when configured; otherwise store on disk.
         if (isR2Configured()) {
           const url = await uploadToR2(
-            `board/${filename}`,
-            webp,
-            "image/webp"
+            `${isPdf ? "docs" : "board"}/${filename}`,
+            buffer,
+            contentType
           );
           return res.json({ url });
         }
 
         const outPath = path.join(dir, filename);
-        await fs.promises.writeFile(outPath, webp);
+        await fs.promises.writeFile(outPath, buffer);
         return res.json({ url: `/uploads/${filename}` });
       } catch (error) {
         console.error("[Upload] failed:", error);

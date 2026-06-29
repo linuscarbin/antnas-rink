@@ -3,7 +3,15 @@ import SiteLayout from "@/components/SiteLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDay, formatTime } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
-import { CalendarDays, Info, MapPin, Ticket, Users } from "lucide-react";
+import { Streamdown } from "streamdown";
+import {
+  CalendarDays,
+  Info,
+  MapPin,
+  Phone,
+  Ticket,
+  Users,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 
 function currentSeasonYear(now = new Date()): number {
@@ -14,6 +22,7 @@ export default function Bilbingo() {
   const [season] = useState(() => currentSeasonYear());
   const occasionsQuery = trpc.bingo.listOccasions.useQuery({ season });
   const assignmentsQuery = trpc.bingo.listAssignments.useQuery();
+  const infoQuery = trpc.settings.getBingoInfo.useQuery();
 
   const filledByOccasion = useMemo(() => {
     const m = new Map<number, number>();
@@ -83,6 +92,20 @@ export default function Bilbingo() {
                           </span>
                         )}
                       </div>
+                      {o.leadName && (
+                        <div className="text-sm mt-1 inline-flex items-center gap-1.5">
+                          <span className="text-muted-foreground">Kvällsansvarig:</span>
+                          <span className="font-semibold">{o.leadName}</span>
+                          {o.leadPhone && (
+                            <a
+                              href={`tel:${o.leadPhone}`}
+                              className="inline-flex items-center gap-1 text-primary"
+                            >
+                              <Phone className="h-3.5 w-3.5" /> {o.leadPhone}
+                            </a>
+                          )}
+                        </div>
+                      )}
                       {o.note && (
                         <div className="text-sm text-muted-foreground mt-1">
                           {o.note}
@@ -143,6 +166,16 @@ export default function Bilbingo() {
               </li>
             </ul>
           </div>
+
+          {/* Editable detailed info */}
+          {infoQuery.data?.text ? (
+            <div className="iso-card p-6 mt-6">
+              <h3 className="font-extrabold text-lg mb-3">Allt du behöver veta</h3>
+              <div className="prose prose-sm max-w-none text-muted-foreground">
+                <Streamdown>{infoQuery.data.text}</Streamdown>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </SiteLayout>

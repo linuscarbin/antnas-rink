@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   type LucideIcon,
+  FolderOpen,
   MessageSquare,
   Snowflake,
   Sun,
@@ -25,12 +26,14 @@ const WINTER_NAV: NavItem[] = [
   { href: "/schema", label: "Schema", icon: CalendarDays },
   { href: "/boka", label: "Boka", icon: CalendarDays },
   { href: "/anslagstavla", label: "Anslagstavla", icon: MessageSquare },
+  { href: "/dokument", label: "Dokument", icon: FolderOpen },
   { href: "/kontakt", label: "Kontakt", icon: Users },
 ];
 
 const SUMMER_NAV: NavItem[] = [
   { href: "/bilbingo", label: "Bilbingo", icon: Ticket },
   { href: "/anslagstavla", label: "Anslagstavla", icon: MessageSquare },
+  { href: "/dokument", label: "Dokument", icon: FolderOpen },
   { href: "/kontakt", label: "Kontakt", icon: Users },
   { href: "/", label: "Hockeyrink", icon: Snowflake },
   { href: "/skidspar", label: "Skidspår", icon: Trees },

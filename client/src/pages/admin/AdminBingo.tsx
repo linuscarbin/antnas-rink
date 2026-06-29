@@ -64,6 +64,8 @@ export default function AdminBingo() {
   const [time, setTime] = useState("17:00");
   const [location, setLocation] = useState("Antnäs IP");
   const [target, setTarget] = useState("20");
+  const [leadName, setLeadName] = useState("");
+  const [leadPhone, setLeadPhone] = useState("");
 
   const createOccasion = trpc.bingo.createOccasion.useMutation({
     onSuccess: () => {
@@ -137,7 +139,11 @@ export default function AdminBingo() {
       occasionDate: dt.getTime(),
       location: location || undefined,
       targetCount: parseInt(target, 10) || 20,
+      leadName: leadName || undefined,
+      leadPhone: leadPhone || undefined,
     });
+    setLeadName("");
+    setLeadPhone("");
   }
 
   function copyLink(token: string) {
@@ -217,6 +223,14 @@ export default function AdminBingo() {
               <Label className="text-xs">Mål antal</Label>
               <Input type="number" value={target} onChange={(e) => setTarget(e.target.value)} />
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Kvällsansvarig</Label>
+              <Input value={leadName} onChange={(e) => setLeadName(e.target.value)} placeholder="Namn" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Ansvarigs telefon</Label>
+              <Input value={leadPhone} onChange={(e) => setLeadPhone(e.target.value)} placeholder="070-..." />
+            </div>
           </div>
           <Button className="w-full font-semibold" onClick={addOccasion} disabled={createOccasion.isPending}>
             Lägg till tillfälle
@@ -230,6 +244,12 @@ export default function AdminBingo() {
                 <div key={o.id} className="flex items-center gap-3 rounded-lg border border-border/60 p-2.5">
                   <span className="text-sm font-semibold capitalize flex-1">
                     {formatDay(o.occasionDate)}, kl {formatTime(o.occasionDate)}
+                    {o.leadName && (
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        Ansvarig: {o.leadName}
+                        {o.leadPhone ? ` · ${o.leadPhone}` : ""}
+                      </span>
+                    )}
                   </span>
                   <span className="text-xs text-muted-foreground">mål {o.targetCount}</span>
                   <Button variant="ghost" size="icon" aria-label="Ta bort" onClick={() => deleteOccasion.mutate({ id: o.id })}>

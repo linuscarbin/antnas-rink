@@ -5,6 +5,7 @@ import { bookingsRouter } from "./routers/bookings";
 import { chatRouter } from "./routers/chat";
 import { contactsRouter } from "./routers/contacts";
 import { bingoRouter } from "./routers/bingo";
+import { documentsRouter } from "./routers/documents";
 import { dutyRouter } from "./routers/duty";
 import { expensesRouter } from "./routers/expenses";
 import { refuelingsRouter } from "./routers/refuelings";
@@ -33,6 +34,7 @@ export const appRouter = router({
   expenses: expensesRouter,
   bingo: bingoRouter,
   settings: settingsRouter,
+  documents: documentsRouter,
 });
 
 export type AppRouter = typeof appRouter;

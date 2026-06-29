@@ -7,6 +7,7 @@ import {
   CalendarDays,
   CalendarRange,
   Settings,
+  FolderOpen,
   Ticket,
   Trees,
   Users,
@@ -15,6 +16,7 @@ import {
 import { useState } from "react";
 import AdminBingo from "./admin/AdminBingo";
 import AdminBookings from "./admin/AdminBookings";
+import AdminDocs from "./admin/AdminDocs";
 import AdminContacts from "./admin/AdminContacts";
 import AdminDuty from "./admin/AdminDuty";
 import AdminSettings from "./admin/AdminSettings";
@@ -25,6 +27,7 @@ const TABS = [
   { id: "duty", label: "Rinkjour", icon: CalendarDays },
   { id: "skiduty", label: "Spårjour", icon: Trees },
   { id: "bingo", label: "Bilbingo", icon: Ticket },
+  { id: "docs", label: "Dokument", icon: FolderOpen },
   { id: "contacts", label: "Kontakter", icon: Users },
   { id: "bookings", label: "Bokningar", icon: CalendarRange },
   { id: "users", label: "Användare", icon: UsersRound },
@@ -113,6 +116,7 @@ export default function Admin() {
           {tab === "duty" && <AdminDuty />}
           {tab === "skiduty" && <AdminSkiDuty />}
           {tab === "bingo" && <AdminBingo />}
+          {tab === "docs" && <AdminDocs />}
           {tab === "contacts" && <AdminContacts />}
           {tab === "bookings" && <AdminBookings />}
           {tab === "users" && <AdminUsers />}

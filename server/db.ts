@@ -4,6 +4,7 @@ import {
   bilbingoOccasions,
   bingoAssignments,
   bookings,
+  documents,
   chatMessages,
   contacts,
   dutySchedule,
@@ -13,6 +14,7 @@ import {
   InsertBilbingoOccasion,
   InsertBingoAssignment,
   InsertBooking,
+  InsertDocument,
   InsertEffort,
   InsertExpense,
   InsertChatMessage,
@@ -618,6 +620,23 @@ export async function setExpenseReimbursed(id: number, reimbursed: boolean) {
     .set({ reimbursed, reimbursedAt: reimbursed ? new Date() : null })
     .where(eq(expenses.id, id));
   return getExpense(id);
+}
+
+/* --------------------------- Documents ---------------------------- */
+
+export async function listDocuments() {
+  const db = await requireDb();
+  return db.select().from(documents).orderBy(desc(documents.createdAt));
+}
+
+export async function createDocument(data: InsertDocument) {
+  const db = await requireDb();
+  await db.insert(documents).values(data);
+}
+
+export async function deleteDocument(id: number) {
+  const db = await requireDb();
+  await db.delete(documents).where(eq(documents.id, id));
 }
 
 /* ------------------------ Sommar / Bilbingo ----------------------- */

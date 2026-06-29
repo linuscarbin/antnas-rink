@@ -30,6 +30,8 @@ export const bingoRouter = router({
         occasionDate: z.number().int(),
         location: z.string().max(200).optional(),
         targetCount: z.number().int().min(1).max(200).default(20),
+        leadName: z.string().max(120).optional(),
+        leadPhone: z.string().max(40).optional(),
         note: z.string().max(500).optional(),
       })
     )
@@ -39,6 +41,8 @@ export const bingoRouter = router({
         occasionDate: new Date(input.occasionDate),
         location: input.location || null,
         targetCount: input.targetCount,
+        leadName: input.leadName || null,
+        leadPhone: input.leadPhone || null,
         note: input.note || null,
       })
     ),
@@ -50,6 +54,8 @@ export const bingoRouter = router({
         occasionDate: z.number().int().optional(),
         location: z.string().max(200).nullable().optional(),
         targetCount: z.number().int().min(1).max(200).optional(),
+        leadName: z.string().max(120).nullable().optional(),
+        leadPhone: z.string().max(40).nullable().optional(),
         note: z.string().max(500).nullable().optional(),
       })
     )

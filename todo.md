@@ -160,3 +160,13 @@
 - [x] Vitest för fördelningsalgoritm (5 tester)
 - [x] Verifierad end-to-end via API (lag/familjer/tillfällen/fördelning 120 pass)
 - [x] Pusha till privat GitHub-repo
+
+## Föreningsnytta (från antnasbk.com)
+- [x] Bilbingo-info: admin-redigerbar (markdown) visas på bilbingosidan
+- [x] Schema: kvällsansvarig (namn+telefon) per bilbingo-tillfälle
+- [x] Kvällsansvarig visas på tillfälle (publikt + admin)
+- [x] Schema: documents-tabell (titel, kategori, fil-URL, uppladdad av)
+- [x] Router: documents list/create/delete (admin upload via R2/disk, PDF+bild)
+- [x] Frontend: dokumentsida (lista per kategori + nedladdning) + admin-hantering
+- [x] Verifierad via API (bingo-info, dokument)
+- [x] Pusha till privat GitHub-repo

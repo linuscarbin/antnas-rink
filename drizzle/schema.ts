@@ -311,6 +311,9 @@ export const bilbingoOccasions = mysqlTable("bilbingoOccasions", {
   location: varchar("location", { length: 200 }),
   /** Target number of people to staff this occasion. Default 20. */
   targetCount: int("targetCount").default(20).notNull(),
+  /** Evening lead / kvällsansvarig for this occasion. */
+  leadName: varchar("leadName", { length: 120 }),
+  leadPhone: varchar("leadPhone", { length: 40 }),
   note: text("note"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -330,6 +333,21 @@ export const bingoAssignments = mysqlTable("bingoAssignments", {
 
 export type BingoAssignment = typeof bingoAssignments.$inferSelect;
 export type InsertBingoAssignment = typeof bingoAssignments.$inferInsert;
+
+/** Document library: admin-uploaded files for leaders (policies, forms, etc). */
+export const documents = mysqlTable("documents", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 200 }).notNull(),
+  category: varchar("category", { length: 120 }),
+  fileUrl: varchar("fileUrl", { length: 512 }).notNull(),
+  /** Original file name for nicer downloads. */
+  fileName: varchar("fileName", { length: 255 }),
+  uploadedByName: varchar("uploadedByName", { length: 120 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DocumentRow = typeof documents.$inferSelect;
+export type InsertDocument = typeof documents.$inferInsert;
 
 /**
  * Stores the platform-managed Heartbeat cron task uid for the weekly

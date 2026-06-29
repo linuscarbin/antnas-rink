@@ -12,6 +12,7 @@ import Kontakt from "./pages/Kontakt";
 import Login from "./pages/Login";
 import Profil from "./pages/Profil";
 import Bilbingo from "./pages/Bilbingo";
+import Dokument from "./pages/Dokument";
 import LagFamiljer from "./pages/LagFamiljer";
 import Schema from "./pages/Schema";
 import Skidspar from "./pages/Skidspar";
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/" component={SeasonHome} />
       <Route path="/skidspar" component={Skidspar} />
       <Route path="/bilbingo" component={Bilbingo} />
+      <Route path="/dokument" component={Dokument} />
       <Route path="/lag/:token" component={LagFamiljer} />
       <Route path="/schema" component={Schema} />
       <Route path="/boka" component={Boka} />
