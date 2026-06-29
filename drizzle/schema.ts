@@ -268,6 +268,69 @@ export const expenses = mysqlTable("expenses", {
 export type Expense = typeof expenses.$inferSelect;
 export type InsertExpense = typeof expenses.$inferInsert;
 
+/* ======================= Antnäs Sommar / Bilbingo ===================== */
+
+/** Teams (lag) in the association; team leaders fill in their families. */
+export const teams = mysqlTable("teams", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 160 }).notNull(),
+  /** Unguessable token used in the shareable fill-in link for team leaders. */
+  shareToken: varchar("shareToken", { length: 40 }).notNull().unique(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Team = typeof teams.$inferSelect;
+export type InsertTeam = typeof teams.$inferInsert;
+
+/**
+ * A family belonging to a team. Work shifts are allocated proportionally to
+ * `activeCount` (number of active children in that family).
+ */
+export const families = mysqlTable("families", {
+  id: int("id").autoincrement().primaryKey(),
+  teamId: int("teamId").notNull(),
+  parentName: varchar("parentName", { length: 160 }).notNull(),
+  phone: varchar("phone", { length: 40 }),
+  email: varchar("email", { length: 320 }),
+  /** Number of active children (drives how many shifts the family gets). */
+  activeCount: int("activeCount").default(1).notNull(),
+  /** Comma-separated occasion ids the family cannot attend (förhinder). */
+  unavailable: text("unavailable"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Family = typeof families.$inferSelect;
+export type InsertFamily = typeof families.$inferInsert;
+
+/** A bilbingo occasion/date that needs to be staffed. */
+export const bilbingoOccasions = mysqlTable("bilbingoOccasions", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Year/season this occasion belongs to. */
+  season: int("season").notNull(),
+  occasionDate: timestamp("occasionDate").notNull(),
+  location: varchar("location", { length: 200 }),
+  /** Target number of people to staff this occasion. Default 20. */
+  targetCount: int("targetCount").default(20).notNull(),
+  note: text("note"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type BilbingoOccasion = typeof bilbingoOccasions.$inferSelect;
+export type InsertBilbingoOccasion = typeof bilbingoOccasions.$inferInsert;
+
+/** Assignment of a family (one shift) to a bilbingo occasion. */
+export const bingoAssignments = mysqlTable("bingoAssignments", {
+  id: int("id").autoincrement().primaryKey(),
+  occasionId: int("occasionId").notNull(),
+  familyId: int("familyId").notNull(),
+  /** Locked assignments are preserved when re-running auto distribution. */
+  locked: boolean("locked").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type BingoAssignment = typeof bingoAssignments.$inferSelect;
+export type InsertBingoAssignment = typeof bingoAssignments.$inferInsert;
+
 /**
  * Stores the platform-managed Heartbeat cron task uid for the weekly
  * duty reminder job, so it can be looked up / updated later.

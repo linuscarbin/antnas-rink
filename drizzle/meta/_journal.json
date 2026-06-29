@@ -57,6 +57,13 @@
       "when": 1782732116338,
       "tag": "0007_tearful_gwen_stacy",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1782756922508,
+      "tag": "0008_premium_the_anarchist",
+      "breakpoints": true
     }
   ]
 }

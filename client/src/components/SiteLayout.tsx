@@ -1,6 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
 import {
   CalendarDays,
   LayoutDashboard,
@@ -8,13 +9,17 @@ import {
   type LucideIcon,
   MessageSquare,
   Snowflake,
+  Sun,
+  Ticket,
   Trees,
   Users,
 } from "lucide-react";
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 
-const NAV: { href: string; label: string; icon: LucideIcon }[] = [
+type NavItem = { href: string; label: string; icon: LucideIcon };
+
+const WINTER_NAV: NavItem[] = [
   { href: "/", label: "Hockeyrink", icon: Snowflake },
   { href: "/skidspar", label: "Skidspår", icon: Trees },
   { href: "/schema", label: "Schema", icon: CalendarDays },
@@ -23,9 +28,23 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/kontakt", label: "Kontakt", icon: Users },
 ];
 
+const SUMMER_NAV: NavItem[] = [
+  { href: "/bilbingo", label: "Bilbingo", icon: Ticket },
+  { href: "/anslagstavla", label: "Anslagstavla", icon: MessageSquare },
+  { href: "/kontakt", label: "Kontakt", icon: Users },
+  { href: "/", label: "Hockeyrink", icon: Snowflake },
+  { href: "/skidspar", label: "Skidspår", icon: Trees },
+];
+
 export default function SiteLayout({ children }: { children: ReactNode }) {
   const { user, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
+  const seasonQuery = trpc.settings.getSeason.useQuery();
+  const season = seasonQuery.data?.season ?? "vinter";
+  const isSummer = season === "sommar";
+  const nav = isSummer ? SUMMER_NAV : WINTER_NAV;
+  const brandWord = isSummer ? "Sommar" : "Vinter";
+  const BrandIcon = isSummer ? Sun : Snowflake;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -33,15 +52,15 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
         <div className="container flex h-16 items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <Snowflake className="h-5 w-5" />
+              <BrandIcon className="h-5 w-5" />
             </span>
             <span className="font-extrabold text-lg leading-none tracking-tight">
-              Antnäs<span className="text-primary"> Vinter</span>
+              Antnäs<span className="text-primary"> {brandWord}</span>
             </span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
-            {NAV.map((item) => {
+            {nav.map((item) => {
               const active = location === item.href;
               return (
                 <Link
@@ -104,7 +123,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
         {/* Mobile nav */}
         <nav className="md:hidden border-t border-border/60 bg-background/90">
           <div className="container flex items-center gap-1 overflow-x-auto py-2">
-            {NAV.map((item) => {
+            {nav.map((item) => {
               const active = location === item.href;
               const Icon = item.icon;
               return (
@@ -130,8 +149,8 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
 
       <footer className="border-t border-border/70 bg-background/70">
         <div className="container py-6 text-sm text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span className="font-semibold text-foreground">Antnäs Vinter</span>
-          <span>Byns hockeyrink och skidspår — skött av oss tillsammans.</span>
+          <span className="font-semibold text-foreground">Antnäs BK</span>
+          <span>Hockeyrink, skidspår och bilbingo — skött av oss tillsammans.</span>
         </div>
       </footer>
     </div>

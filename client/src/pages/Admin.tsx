@@ -7,11 +7,13 @@ import {
   CalendarDays,
   CalendarRange,
   Settings,
+  Ticket,
   Trees,
   Users,
   UsersRound,
 } from "lucide-react";
 import { useState } from "react";
+import AdminBingo from "./admin/AdminBingo";
 import AdminBookings from "./admin/AdminBookings";
 import AdminContacts from "./admin/AdminContacts";
 import AdminDuty from "./admin/AdminDuty";
@@ -22,6 +24,7 @@ import AdminUsers from "./admin/AdminUsers";
 const TABS = [
   { id: "duty", label: "Rinkjour", icon: CalendarDays },
   { id: "skiduty", label: "Spårjour", icon: Trees },
+  { id: "bingo", label: "Bilbingo", icon: Ticket },
   { id: "contacts", label: "Kontakter", icon: Users },
   { id: "bookings", label: "Bokningar", icon: CalendarRange },
   { id: "users", label: "Användare", icon: UsersRound },
@@ -109,6 +112,7 @@ export default function Admin() {
         <div className="mt-6">
           {tab === "duty" && <AdminDuty />}
           {tab === "skiduty" && <AdminSkiDuty />}
+          {tab === "bingo" && <AdminBingo />}
           {tab === "contacts" && <AdminContacts />}
           {tab === "bookings" && <AdminBookings />}
           {tab === "users" && <AdminUsers />}

@@ -1,25 +1,33 @@
 import { and, desc, eq, gt, gte, lt, lte, ne, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  bilbingoOccasions,
+  bingoAssignments,
   bookings,
   chatMessages,
   contacts,
   dutySchedule,
   efforts,
   expenses,
+  families,
+  InsertBilbingoOccasion,
+  InsertBingoAssignment,
   InsertBooking,
   InsertEffort,
   InsertExpense,
   InsertChatMessage,
   InsertContact,
   InsertDutySchedule,
+  InsertFamily,
   InsertRefueling,
   InsertSkiDutySchedule,
+  InsertTeam,
   InsertUser,
   refuelings,
   rinkStatus,
   skiDutySchedule,
   systemSettings,
+  teams,
   trackStatus,
   users,
 } from "../drizzle/schema";
@@ -610,6 +618,173 @@ export async function setExpenseReimbursed(id: number, reimbursed: boolean) {
     .set({ reimbursed, reimbursedAt: reimbursed ? new Date() : null })
     .where(eq(expenses.id, id));
   return getExpense(id);
+}
+
+/* ------------------------ Sommar / Bilbingo ----------------------- */
+
+export async function listTeams() {
+  const db = await requireDb();
+  return db.select().from(teams).orderBy(teams.name);
+}
+
+export async function getTeam(id: number) {
+  const db = await requireDb();
+  const rows = await db.select().from(teams).where(eq(teams.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function getTeamByToken(token: string) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(teams)
+    .where(eq(teams.shareToken, token))
+    .limit(1);
+  return rows[0];
+}
+
+export async function createTeam(data: InsertTeam) {
+  const db = await requireDb();
+  const result = await db.insert(teams).values(data).$returningId();
+  return getTeam(result[0].id);
+}
+
+export async function updateTeam(id: number, name: string) {
+  const db = await requireDb();
+  await db.update(teams).set({ name }).where(eq(teams.id, id));
+}
+
+export async function deleteTeam(id: number) {
+  const db = await requireDb();
+  await db.delete(families).where(eq(families.teamId, id));
+  await db.delete(teams).where(eq(teams.id, id));
+}
+
+export async function listFamilies(teamId?: number) {
+  const db = await requireDb();
+  if (teamId) {
+    return db
+      .select()
+      .from(families)
+      .where(eq(families.teamId, teamId))
+      .orderBy(families.parentName);
+  }
+  return db.select().from(families).orderBy(families.parentName);
+}
+
+export async function getFamily(id: number) {
+  const db = await requireDb();
+  const rows = await db.select().from(families).where(eq(families.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function createFamily(data: InsertFamily) {
+  const db = await requireDb();
+  const result = await db.insert(families).values(data).$returningId();
+  return getFamily(result[0].id);
+}
+
+export async function updateFamily(
+  id: number,
+  data: Partial<InsertFamily>
+) {
+  const db = await requireDb();
+  await db.update(families).set(data).where(eq(families.id, id));
+  return getFamily(id);
+}
+
+export async function deleteFamily(id: number) {
+  const db = await requireDb();
+  await db.delete(bingoAssignments).where(eq(bingoAssignments.familyId, id));
+  await db.delete(families).where(eq(families.id, id));
+}
+
+export async function listOccasions(season?: number) {
+  const db = await requireDb();
+  if (season) {
+    return db
+      .select()
+      .from(bilbingoOccasions)
+      .where(eq(bilbingoOccasions.season, season))
+      .orderBy(bilbingoOccasions.occasionDate);
+  }
+  return db.select().from(bilbingoOccasions).orderBy(bilbingoOccasions.occasionDate);
+}
+
+export async function getOccasion(id: number) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(bilbingoOccasions)
+    .where(eq(bilbingoOccasions.id, id))
+    .limit(1);
+  return rows[0];
+}
+
+export async function createOccasion(data: InsertBilbingoOccasion) {
+  const db = await requireDb();
+  const result = await db.insert(bilbingoOccasions).values(data).$returningId();
+  return getOccasion(result[0].id);
+}
+
+export async function updateOccasion(
+  id: number,
+  data: Partial<InsertBilbingoOccasion>
+) {
+  const db = await requireDb();
+  await db.update(bilbingoOccasions).set(data).where(eq(bilbingoOccasions.id, id));
+  return getOccasion(id);
+}
+
+export async function deleteOccasion(id: number) {
+  const db = await requireDb();
+  await db.delete(bingoAssignments).where(eq(bingoAssignments.occasionId, id));
+  await db.delete(bilbingoOccasions).where(eq(bilbingoOccasions.id, id));
+}
+
+export async function listAssignments(occasionIds?: number[]) {
+  const db = await requireDb();
+  const rows = await db.select().from(bingoAssignments);
+  if (occasionIds) {
+    return rows.filter((r) => occasionIds.includes(r.occasionId));
+  }
+  return rows;
+}
+
+export async function createAssignment(data: InsertBingoAssignment) {
+  const db = await requireDb();
+  await db.insert(bingoAssignments).values(data);
+}
+
+export async function deleteAssignment(id: number) {
+  const db = await requireDb();
+  await db.delete(bingoAssignments).where(eq(bingoAssignments.id, id));
+}
+
+export async function setAssignmentLocked(id: number, locked: boolean) {
+  const db = await requireDb();
+  await db
+    .update(bingoAssignments)
+    .set({ locked })
+    .where(eq(bingoAssignments.id, id));
+}
+
+/** Deletes all non-locked assignments for a set of occasions (before re-run). */
+export async function clearUnlockedAssignments(occasionIds: number[]) {
+  const db = await requireDb();
+  const rows = await db.select().from(bingoAssignments);
+  const toDelete = rows.filter(
+    (r) => occasionIds.includes(r.occasionId) && !r.locked
+  );
+  for (const r of toDelete) {
+    await db.delete(bingoAssignments).where(eq(bingoAssignments.id, r.id));
+  }
+}
+
+export async function bulkInsertAssignments(rows: InsertBingoAssignment[]) {
+  if (rows.length === 0) return;
+  const db = await requireDb();
+  await db.insert(bingoAssignments).values(rows);
 }
 
 /* -------------------------- System settings ----------------------- */

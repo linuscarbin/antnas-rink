@@ -4,10 +4,12 @@ import { authRouter } from "./routers/auth";
 import { bookingsRouter } from "./routers/bookings";
 import { chatRouter } from "./routers/chat";
 import { contactsRouter } from "./routers/contacts";
+import { bingoRouter } from "./routers/bingo";
 import { dutyRouter } from "./routers/duty";
 import { expensesRouter } from "./routers/expenses";
 import { refuelingsRouter } from "./routers/refuelings";
 import { scheduleRouter } from "./routers/schedule";
+import { settingsRouter } from "./routers/settings";
 import { skiDutyRouter } from "./routers/skiDuty";
 import { statusRouter } from "./routers/status";
 import { trackRouter } from "./routers/track";
@@ -29,6 +31,8 @@ export const appRouter = router({
   skiDuty: skiDutyRouter,
   refuelings: refuelingsRouter,
   expenses: expensesRouter,
+  bingo: bingoRouter,
+  settings: settingsRouter,
 });
 
 export type AppRouter = typeof appRouter;

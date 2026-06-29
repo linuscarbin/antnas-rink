@@ -141,3 +141,22 @@
 - [x] Frontend: ExpenseSection på Hockeyrink + Skidspår
 - [x] Verifierad via API (skapa/summering/CSV)
 - [x] Pusha till privat GitHub-repo
+
+## Antnäs Sommar – säsong + bilbingo
+- [x] Säsongsinställning (vinter/sommar) i systemSettings + admin-växling
+- [x] Frontend: nav/start anpassas efter säsong, båda alltid åtkomliga
+- [x] Schema: bilbingoOccasions (datum, plats, mål-antal=20, info)
+- [x] Schema: teams (namn, share-token) + families (namn, kontakt, lagId, activeCount, förhinder)
+- [x] Schema: bingoAssignments (occasionId, familyId, locked)
+- [x] Router: occasions CRUD (admin) + publik läsning
+- [x] Router: teams CRUD (admin) + publik ifyllnad via share-token
+- [x] Router: families CRUD via lag-länk (antal aktiva per familj)
+- [x] Auto-fördelning: pass per AKTIV (proportionellt), 20/tillfälle, sprid över datum, hänsyn till förhinder
+- [x] Manuell justering: ta bort/lås tilldelning + manuellt lägga till
+- [x] Frontend: publik Bilbingo-sida (datum + så funkar det + platser fyllda)
+- [x] Frontend: lagledare fyller familjelista via länk
+- [x] Frontend: admin planeringsverktyg (fördela/justera, översikt per tillfälle)
+- [x] Synlighet: kontaktuppgifter endast för admin/lagledare
+- [x] Vitest för fördelningsalgoritm (5 tester)
+- [x] Verifierad end-to-end via API (lag/familjer/tillfällen/fördelning 120 pass)
+- [x] Pusha till privat GitHub-repo

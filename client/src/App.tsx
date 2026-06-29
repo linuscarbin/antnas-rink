@@ -11,14 +11,27 @@ import Home from "./pages/Home";
 import Kontakt from "./pages/Kontakt";
 import Login from "./pages/Login";
 import Profil from "./pages/Profil";
+import Bilbingo from "./pages/Bilbingo";
+import LagFamiljer from "./pages/LagFamiljer";
 import Schema from "./pages/Schema";
 import Skidspar from "./pages/Skidspar";
+import { trpc } from "./lib/trpc";
+
+function SeasonHome() {
+  // The landing page follows the active season: summer shows Bilbingo,
+  // winter shows the hockey rink status page. Both remain reachable via nav.
+  const seasonQuery = trpc.settings.getSeason.useQuery();
+  if (seasonQuery.data?.season === "sommar") return <Bilbingo />;
+  return <Home />;
+}
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={SeasonHome} />
       <Route path="/skidspar" component={Skidspar} />
+      <Route path="/bilbingo" component={Bilbingo} />
+      <Route path="/lag/:token" component={LagFamiljer} />
       <Route path="/schema" component={Schema} />
       <Route path="/boka" component={Boka} />
       <Route path="/anslagstavla" component={Anslagstavla} />
