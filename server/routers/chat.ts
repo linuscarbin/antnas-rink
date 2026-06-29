@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { ENV } from "../_core/env";
 import * as db from "../db";
 import {
   adminProcedure,
@@ -32,10 +33,14 @@ export const chatRouter = router({
           message: "Skriv något eller bifoga en bild.",
         });
       }
-      // Only allow our own uploads path.
+      // Accept only our own image URLs: the relative disk path, or an absolute
+      // URL under the configured R2 public domain.
+      const r2Base = ENV.r2.publicUrl.replace(/\/+$/, "");
+      const candidate = input.imageUrl ?? "";
       const imageUrl =
-        input.imageUrl && input.imageUrl.startsWith("/uploads/")
-          ? input.imageUrl
+        candidate.startsWith("/uploads/") ||
+        (r2Base && candidate.startsWith(`${r2Base}/`))
+          ? candidate
           : null;
       return db.createChatMessage({
         userId: ctx.user.id,

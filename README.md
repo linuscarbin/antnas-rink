@@ -59,7 +59,15 @@ Det **första kontot som registreras blir automatiskt administratör** (ägare).
 | `MAIL_FROM` | Nej | Avsändaradress, t.ex. `Antnäs Hockeyrink <noreply@dindomän.se>` |
 | `PUBLIC_BASE_URL` | Nej | Publik URL till sajten (för e-postlänkar) |
 | `DUTY_REMINDER_CRON` | Nej | Cron (5-fält, serverns tidszon) för jourpåminnelse (rink + spår). Standard `0 7 * * 1` (måndag 07:00). Tomt = av |
-| `UPLOAD_DIR` | Nej | Mapp där uppladdade bilder (anslagstavlan) sparas. Standard `/data/uploads` i produktion. Montera en persistent volym hit i Coolify |
+| `R2_ACCOUNT_ID` | Nej* | Cloudflare R2 account-id |
+| `R2_ACCESS_KEY_ID` | Nej* | R2 access key id |
+| `R2_SECRET_ACCESS_KEY` | Nej* | R2 secret access key |
+| `R2_BUCKET` | Nej* | R2 bucket-namn för bilder |
+| `R2_PUBLIC_URL` | Nej* | Publik URL där bucketen serveras via din domän, t.ex. `https://media.dindoman.se` |
+| `R2_ENDPOINT` | Nej | Explicit S3-endpoint (annars härleds från account-id) |
+| `UPLOAD_DIR` | Nej | Disk-fallback för bilder när R2 *inte* används. Standard `/data/uploads` |
+
+\* R2-bilder: ange alla `R2_*` (utom valfri endpoint) för att lagra bilder i Cloudflare R2. Utan dem används disk (`UPLOAD_DIR`).
 
 \* Rekommenderas för att jourpåminnelser och konfliktlarm ska skickas.
 
@@ -86,11 +94,15 @@ Det **första kontot som registreras blir automatiskt administratör** (ägare).
    Den self-hostade schemaläggaren startar automatiskt.
 7. **Första kontot:** Gå till `/login`, välj *Skapa konto* och registrera dig —
    det blir admin. Lägg sedan in jourscheman och kontakter via adminpanelen.
-8. **Persistent lagring för bilder:** Anslagstavlan tillåter bilduppladdning som
-   sparas på disk i `UPLOAD_DIR` (default `/data/uploads`). I Coolify, lägg till en
-   **Persistent Storage / Volume** monterad på `/data` (eller direkt på
-   `/data/uploads`) så att bilderna överlever omstarter och omdeployer. Utan
-   volym försvinner uppladdade bilder när containern startas om.
+8. **Bildlagring (Cloudflare R2):** Anslagstavlan laddar upp bilder till din
+   R2-bucket via S3-API:t och serverar dem via din egen domän. Sätt `R2_ACCOUNT_ID`,
+   `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` och `R2_PUBLIC_URL`
+   (din domän kopplad till bucketen). Koppla domänen till bucketen i Cloudflare
+   (R2 -> bucket -> Settings -> Custom Domains) och se till att objekten är
+   publikt läsbara via den domänen.
+    \
+   Om R2 *inte* konfigureras faller appen tillbaka till disklagring i `UPLOAD_DIR`
+   (montera då en persistent volym på `/data` i Coolify). Med R2 behövs ingen volym.
 
 ### docker-compose (lokalt / referens)
 

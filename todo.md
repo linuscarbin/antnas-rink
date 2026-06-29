@@ -77,4 +77,12 @@
 - [x] Visa bilder i tråden (klickbar/förstora)
 - [x] Texter: anslagstavlan gäller hela Antnäs Vinter (rink + skidspår)
 - [x] README + docker-compose: persistent volym i Coolify för uppladdningar
-- [ ] Pusha uppdatering till privat GitHub-repo
+- [x] Pusha uppdatering till privat GitHub-repo
+
+## Lagring via Cloudflare R2
+- [x] R2-klient (S3 SDK) med env R2_* + publik domän-URL
+- [x] Uppladdning skickar webp till R2, returnerar publik URL
+- [x] Disk-fallback när R2 ej konfigurerat (dev) — verifierat
+- [x] chat.post accepterar både R2- och /uploads-URL
+- [x] README/compose/env: R2-konfiguration för Coolify
+- [ ] Testa och pusha till GitHub

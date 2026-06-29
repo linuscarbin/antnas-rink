@@ -15,10 +15,34 @@ export const ENV = {
   // Default: Mondays at 07:00. Set empty to disable.
   dutyReminderCron: process.env.DUTY_REMINDER_CRON ?? "0 7 * * 1",
 
-  // Directory where uploaded board images are stored. In Coolify, mount a
-  // persistent volume here so images survive restarts/redeploys.
-  // Falls back to a local ./uploads folder when /data is not writable (dev).
+  // Directory where uploaded board images are stored (disk fallback when R2
+  // is not configured). In Coolify with R2 this is not needed.
   uploadDir:
     process.env.UPLOAD_DIR ??
     (process.env.NODE_ENV === "production" ? "/data/uploads" : "./uploads"),
+
+  // Cloudflare R2 (S3-compatible) storage for board images.
+  r2: {
+    accountId: process.env.R2_ACCOUNT_ID ?? "",
+    accessKeyId: process.env.R2_ACCESS_KEY_ID ?? "",
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? "",
+    bucket: process.env.R2_BUCKET ?? "",
+    // Optional explicit S3 endpoint; defaults to the account-derived URL.
+    endpoint: process.env.R2_ENDPOINT ?? "",
+    // Public base URL where the bucket is served (your own domain),
+    // e.g. https://media.antnasvinter.se
+    publicUrl: process.env.R2_PUBLIC_URL ?? "",
+  },
 };
+
+/** True when all required R2 settings are present. */
+export function isR2Configured(): boolean {
+  const r = ENV.r2;
+  return Boolean(
+    r.accessKeyId &&
+      r.secretAccessKey &&
+      r.bucket &&
+      r.publicUrl &&
+      (r.accountId || r.endpoint)
+  );
+}
