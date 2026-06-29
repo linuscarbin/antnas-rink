@@ -15,7 +15,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 
 const NAV: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/", label: "Status", icon: Snowflake },
+  { href: "/", label: "Hockeyrink", icon: Snowflake },
   { href: "/skidspar", label: "Skidspår", icon: Trees },
   { href: "/schema", label: "Schema", icon: CalendarDays },
   { href: "/boka", label: "Boka", icon: CalendarDays },
