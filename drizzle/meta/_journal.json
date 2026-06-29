@@ -36,6 +36,20 @@
       "when": 1782720761842,
       "tag": "0004_parallel_the_anarchist",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1782730477498,
+      "tag": "0005_dashing_spencer_smythe",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1782731005332,
+      "tag": "0006_flimsy_alex_wilder",
+      "breakpoints": true
     }
   ]
 }

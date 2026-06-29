@@ -5,12 +5,16 @@ import {
   chatMessages,
   contacts,
   dutySchedule,
+  efforts,
   InsertBooking,
+  InsertEffort,
   InsertChatMessage,
   InsertContact,
   InsertDutySchedule,
+  InsertRefueling,
   InsertSkiDutySchedule,
   InsertUser,
+  refuelings,
   rinkStatus,
   skiDutySchedule,
   systemSettings,
@@ -459,6 +463,107 @@ export async function softDeleteChatMessage(id: number) {
     .update(chatMessages)
     .set({ deleted: true })
     .where(eq(chatMessages.id, id));
+}
+
+/* ----------------------------- Efforts ---------------------------- */
+
+export async function logEffort(data: InsertEffort) {
+  const db = await requireDb();
+  await db.insert(efforts).values(data);
+}
+
+/** Removes the most recent effort of a kind (used when undoing a marking). */
+export async function removeLatestEffort(
+  kind: "plogad" | "spolad" | "draget"
+) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(efforts)
+    .where(eq(efforts.kind, kind))
+    .orderBy(desc(efforts.id))
+    .limit(1);
+  if (rows[0]) {
+    await db.delete(efforts).where(eq(efforts.id, rows[0].id));
+  }
+}
+
+/**
+ * Aggregates effort counts per person for the given kinds since `since`.
+ * Counts both the registering person and named helpers (split on comma).
+ * Returns a sorted leaderboard [{ name, count }].
+ */
+export async function getEffortLeaderboard(
+  kinds: Array<"plogad" | "spolad" | "draget">,
+  since?: Date
+) {
+  const db = await requireDb();
+  const all = await db.select().from(efforts);
+  const counts = new Map<string, number>();
+  for (const e of all) {
+    if (!kinds.includes(e.kind as any)) continue;
+    if (since && new Date(e.createdAt) < since) continue;
+    const names = [e.byName, ...(e.helpers ? e.helpers.split(",") : [])]
+      .map((n) => n.trim())
+      .filter(Boolean);
+    for (const n of names) {
+      counts.set(n, (counts.get(n) ?? 0) + 1);
+    }
+  }
+  return Array.from(counts.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/* --------------------------- Refuelings --------------------------- */
+
+export async function listRefuelings(
+  area?: "hockeyrink" | "skidspar"
+) {
+  const db = await requireDb();
+  if (area) {
+    return db
+      .select()
+      .from(refuelings)
+      .where(eq(refuelings.area, area))
+      .orderBy(desc(refuelings.purchasedAt));
+  }
+  return db.select().from(refuelings).orderBy(desc(refuelings.purchasedAt));
+}
+
+export async function createRefueling(data: InsertRefueling) {
+  const db = await requireDb();
+  const result = await db.insert(refuelings).values(data).$returningId();
+  const rows = await db
+    .select()
+    .from(refuelings)
+    .where(eq(refuelings.id, result[0].id))
+    .limit(1);
+  return rows[0];
+}
+
+export async function getRefueling(id: number) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(refuelings)
+    .where(eq(refuelings.id, id))
+    .limit(1);
+  return rows[0];
+}
+
+export async function deleteRefueling(id: number) {
+  const db = await requireDb();
+  await db.delete(refuelings).where(eq(refuelings.id, id));
+}
+
+export async function setRefuelingReimbursed(id: number, reimbursed: boolean) {
+  const db = await requireDb();
+  await db
+    .update(refuelings)
+    .set({ reimbursed, reimbursedAt: reimbursed ? new Date() : null })
+    .where(eq(refuelings.id, id));
+  return getRefueling(id);
 }
 
 /* -------------------------- System settings ----------------------- */

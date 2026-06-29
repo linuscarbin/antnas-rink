@@ -7,6 +7,8 @@ import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
 import { getIsoWeek } from "@shared/rink";
+import RefuelSection from "@/components/RefuelSection";
+import { Input } from "@/components/ui/input";
 import {
   CheckCircle2,
   CloudSnow,
@@ -14,6 +16,8 @@ import {
   Phone,
   Snowflake,
   Thermometer,
+  Trophy,
+  Undo2,
   Wind,
 } from "lucide-react";
 import { useState } from "react";
@@ -28,6 +32,7 @@ function StatusCard({
   icon,
   canAct,
   onMark,
+  onUndo,
   pending,
 }: {
   kind: "plogad" | "spolad";
@@ -36,9 +41,11 @@ function StatusCard({
   doneBy: string | null;
   icon: React.ReactNode;
   canAct: boolean;
-  onMark: () => void;
+  onMark: (helpers: string) => void;
+  onUndo: () => void;
   pending: boolean;
 }) {
+  const [helpers, setHelpers] = useState("");
   // "Fresh" if done within last 24h.
   const fresh = doneAt
     ? Date.now() - new Date(doneAt).getTime() < 24 * 3600 * 1000
@@ -97,14 +104,39 @@ function StatusCard({
       </div>
 
       {canAct && (
-        <Button
-          onClick={onMark}
-          disabled={pending}
-          variant="outline"
-          className="bg-card font-semibold"
-        >
-          Markera som {kind} nu
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Input
+            value={helpers}
+            onChange={(e) => setHelpers(e.target.value)}
+            placeholder="Medhjälpare (valfritt, komma-separera)"
+            className="bg-card text-sm"
+          />
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                onMark(helpers);
+                setHelpers("");
+              }}
+              disabled={pending}
+              variant="outline"
+              className="bg-card font-semibold flex-1"
+            >
+              Markera som {kind} nu
+            </Button>
+            {doneAt && (
+              <Button
+                onClick={onUndo}
+                disabled={pending}
+                variant="ghost"
+                size="icon"
+                aria-label="Ångra"
+                title="Ångra senaste"
+              >
+                <Undo2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -122,17 +154,29 @@ export default function Home() {
   const dutyQuery = trpc.duty.list.useQuery({ year });
   const thisWeekDuty = dutyQuery.data?.find((d) => d.week === week);
 
+  const leaderboardQuery = trpc.status.leaderboard.useQuery();
+  const invalidateAll = () => {
+    utils.status.get.invalidate();
+    utils.status.leaderboard.invalidate();
+  };
   const markPlogad = trpc.status.markPlogad.useMutation({
     onSuccess: () => {
-      utils.status.get.invalidate();
+      invalidateAll();
       toast.success("Status uppdaterad: plogad");
     },
     onError: (e) => toast.error(e.message),
   });
   const markSpolad = trpc.status.markSpolad.useMutation({
     onSuccess: () => {
-      utils.status.get.invalidate();
+      invalidateAll();
       toast.success("Status uppdaterad: spolad");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const undo = trpc.status.undo.useMutation({
+    onSuccess: () => {
+      invalidateAll();
+      toast.success("Ångrade senaste markeringen.");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -178,8 +222,9 @@ export default function Home() {
                 doneBy={statusQuery.data?.plogadBy ?? null}
                 icon={<CloudSnow className="h-6 w-6" />}
                 canAct={isAuthenticated}
-                onMark={() => markPlogad.mutate({ done: true })}
-                pending={markPlogad.isPending}
+                onMark={(helpers) => markPlogad.mutate({ helpers })}
+                onUndo={() => undo.mutate({ kind: "plogad" })}
+                pending={markPlogad.isPending || undo.isPending}
               />
               <StatusCard
                 kind="spolad"
@@ -188,8 +233,9 @@ export default function Home() {
                 doneBy={statusQuery.data?.spoladBy ?? null}
                 icon={<Droplets className="h-6 w-6" />}
                 canAct={isAuthenticated}
-                onMark={() => markSpolad.mutate({ done: true })}
-                pending={markSpolad.isPending}
+                onMark={(helpers) => markSpolad.mutate({ helpers })}
+                onUndo={() => undo.mutate({ kind: "spolad" })}
+                pending={markSpolad.isPending || undo.isPending}
               />
             </>
           )}
@@ -296,9 +342,68 @@ export default function Home() {
 
           {/* Ski track shortcut */}
           <TrackCard />
+
+          {/* Effort leaderboard */}
+          <Leaderboard
+            title="Insatser i säsong"
+            subtitle="Plogning & spolning"
+            data={leaderboardQuery.data}
+            loading={leaderboardQuery.isLoading}
+          />
         </div>
       </div>
+
+      <RefuelSection area="hockeyrink" />
     </SiteLayout>
+  );
+}
+
+export function Leaderboard({
+  title,
+  subtitle,
+  data,
+  loading,
+}: {
+  title: string;
+  subtitle: string;
+  data: { name: string; count: number }[] | undefined;
+  loading: boolean;
+}) {
+  const medal = ["oklch(0.78 0.14 90)", "oklch(0.7 0.02 250)", "oklch(0.65 0.12 50)"];
+  return (
+    <div className="iso-card p-6">
+      <div className="flex items-center gap-2">
+        <Trophy className="h-4 w-4 text-primary" />
+        <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          {title}
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+      {loading ? (
+        <Skeleton className="mt-3 h-20" />
+      ) : data && data.length > 0 ? (
+        <ol className="mt-3 space-y-2">
+          {data.slice(0, 8).map((row, i) => (
+            <li key={row.name} className="flex items-center gap-2 text-sm">
+              <span
+                className="grid h-6 w-6 place-items-center rounded-full text-xs font-extrabold text-white shrink-0"
+                style={{ background: medal[i] ?? "oklch(0.6 0.13 188)" }}
+              >
+                {i + 1}
+              </span>
+              <span className="font-semibold flex-1 min-w-0 truncate">
+                {row.name}
+              </span>
+              <span className="text-muted-foreground">{row.count} st</span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="mt-2 text-sm text-muted-foreground">
+          Inga insatser registrerade ännu.
+        </p>
+      )}
+    </div>
   );
 }
 

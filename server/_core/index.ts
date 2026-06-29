@@ -6,6 +6,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { startScheduler } from "./scheduler";
+import { registerRefuelExport } from "./refuelExport";
 import { registerUploads } from "./uploads";
 import { serveStatic, setupVite } from "./vite";
 
@@ -39,6 +40,8 @@ async function startServer() {
 
   // Image uploads for the community board (disk-backed).
   registerUploads(app);
+  // Auditor exports for refuelings (CSV + receipts ZIP).
+  registerRefuelExport(app);
 
   // tRPC API
   app.use(

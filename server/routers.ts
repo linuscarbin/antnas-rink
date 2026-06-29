@@ -5,6 +5,7 @@ import { bookingsRouter } from "./routers/bookings";
 import { chatRouter } from "./routers/chat";
 import { contactsRouter } from "./routers/contacts";
 import { dutyRouter } from "./routers/duty";
+import { refuelingsRouter } from "./routers/refuelings";
 import { scheduleRouter } from "./routers/schedule";
 import { skiDutyRouter } from "./routers/skiDuty";
 import { statusRouter } from "./routers/status";
@@ -25,6 +26,7 @@ export const appRouter = router({
   schedule: scheduleRouter,
   track: trackRouter,
   skiDuty: skiDutyRouter,
+  refuelings: refuelingsRouter,
 });
 
 export type AppRouter = typeof appRouter;

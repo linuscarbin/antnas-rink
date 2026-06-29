@@ -86,3 +86,49 @@
 - [x] chat.post accepterar både R2- och /uploads-URL
 - [x] README/compose/env: R2-konfiguration för Coolify
 - [x] Testa (30 tester) och pusha till GitHub
+
+## Insatser, ångra och medhjälpare
+- [x] Schema: efforts-tabell (typ, datum, registrerad av, medhjälpare)
+- [x] status.markPlogad/markSpolad tar emot medhjälpare + loggar insats
+- [x] track.markDraget tar emot medhjälpare + loggar insats
+- [x] Ångra: nollställ senaste markering och ta bort dess insats
+- [x] Statistik-API: antal insatser per person (säsong + all tid)
+- [x] Frontend: medhjälparfält vid markering
+- [x] Frontend: ångra-knapp på status-/spårkort
+- [x] Hockeyrink-sida: topplista plog/spol-insatser
+- [x] Skidspår-sida: topplista spårdragningar
+- [x] Vitest för insats-räkning
+
+## Tankning / kvitton (revisorvänligt)
+- [x] Schema: refuelings-tabell (område, datum, belopp, liter, notering, kvitto-URL, av vem)
+- [x] Backend: skapa tankning (inloggad) med kvittobild (R2/disk)
+- [x] Backend: lista tankningar per område + summering (säsong/all tid)
+- [x] Backend: ägare/admin kan ta bort tankning
+- [x] Export: CSV-nedladdning av tankningar (för avstämning mot fakturor)
+- [x] Export: ladda ner enskilda kvitton + ZIP med alla kvitton för period
+- [x] Frontend: tankningssektion på Hockeyrink + Skidspår (registrera + lista)
+- [x] Frontend: nedladdningsknappar (CSV/ZIP) och kvittolänkar
+- [x] Vitest för tankning/summering/CSV
+- [x] Vitest för insatslogik (leaderboard, helper-namn, undo)
+
+## Tankning – ansvarig
+- [x] Varje tankning kopplas till inloggad användare som ansvarig (userId + namn)
+- [x] Visa ansvarig i lista och CSV
+
+## Tankning – betalsätt & återbetalning
+- [x] Schema: paymentMethod (tankkort_abk | egen) + reimbursed-status + reimbursedAt
+- [x] Backend: skapa tankning med betalsätt
+- [x] Backend: admin markerar egen-utlägg som återbetald
+- [x] Summering: separat "att återbetala"-summa
+- [x] CSV/lista: kolumner för betalsätt och återbetalningsstatus
+- [x] Frontend: välj betalsätt vid registrering + status i listan
+
+## Tankning – övrigt
+- [x] Schema: refuelings-tabell (område, datum, belopp, liter, notering, kvitto-URL, av vem)
+- [x] Backend: skapa tankning med kvittobild (R2/disk)
+- [x] Backend: lista tankningar per område + summering
+- [x] Backend: ägare/admin kan ta bort tankning
+- [x] Export: CSV-nedladdning av tankningar
+- [x] Export: ladda ner kvitton (ZIP) + enskilda kvittolänkar
+- [x] Frontend: tankningssektion på Hockeyrink + Skidspår
+- [x] Pusha till privat GitHub-repo

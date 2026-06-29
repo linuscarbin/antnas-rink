@@ -2,6 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import IsoDecor from "@/components/IsoDecor";
 import SiteLayout from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -14,7 +15,9 @@ import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
 import { getIsoWeek } from "@shared/rink";
-import { AlertTriangle, Phone, Snowflake, Trees } from "lucide-react";
+import { AlertTriangle, Phone, Snowflake, Trees, Undo2 } from "lucide-react";
+import { Leaderboard } from "./Home";
+import RefuelSection from "@/components/RefuelSection";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -37,10 +40,24 @@ export default function Skidspar() {
   const [year, setYear] = useState(current.year);
   const dutyQuery = trpc.skiDuty.list.useQuery({ year });
 
+  const [helpers, setHelpers] = useState("");
+  const leaderboardQuery = trpc.track.leaderboard.useQuery();
+  const invalidateTrack = () => {
+    utils.track.get.invalidate();
+    utils.track.leaderboard.invalidate();
+  };
   const markDraget = trpc.track.markDraget.useMutation({
     onSuccess: () => {
-      utils.track.get.invalidate();
+      invalidateTrack();
+      setHelpers("");
       toast.success("Status uppdaterad: draget");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const undo = trpc.track.undo.useMutation({
+    onSuccess: () => {
+      invalidateTrack();
+      toast.success("Ångrade senaste markeringen.");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -156,14 +173,36 @@ export default function Skidspar() {
                   )}
                 </div>
                 {isAuthenticated && (
-                  <Button
-                    onClick={() => markDraget.mutate({ done: true })}
-                    disabled={markDraget.isPending}
-                    variant="outline"
-                    className="bg-card font-semibold"
-                  >
-                    Markera som draget nu
-                  </Button>
+                  <div className="flex flex-col gap-2">
+                    <Input
+                      value={helpers}
+                      onChange={(e) => setHelpers(e.target.value)}
+                      placeholder="Medhjälpare (valfritt, komma-separera)"
+                      className="bg-card text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => markDraget.mutate({ helpers })}
+                        disabled={markDraget.isPending}
+                        variant="outline"
+                        className="bg-card font-semibold flex-1"
+                      >
+                        Markera som draget nu
+                      </Button>
+                      {status?.dragetAt && (
+                        <Button
+                          onClick={() => undo.mutate()}
+                          disabled={undo.isPending}
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Ångra"
+                          title="Ångra senaste"
+                        >
+                          <Undo2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -276,8 +315,17 @@ export default function Skidspar() {
               })()
             )}
           </div>
+
+          <Leaderboard
+            title="Insatser i säsong"
+            subtitle="Spårdragningar"
+            data={leaderboardQuery.data}
+            loading={leaderboardQuery.isLoading}
+          />
         </div>
       </div>
+
+      <RefuelSection area="skidspar" />
 
       {/* Ski duty schedule */}
       <div className="container pb-12">

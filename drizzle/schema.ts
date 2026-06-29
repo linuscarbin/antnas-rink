@@ -193,6 +193,58 @@ export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = typeof chatMessages.$inferInsert;
 
 /**
+ * Effort log: one row per completed action (plogad/spolad/draget).
+ * Powers the per-person contribution leaderboard. Helpers are stored as a
+ * comma-separated list of names (free text), since they may not have accounts.
+ */
+export const efforts = mysqlTable("efforts", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Action area + type. */
+  kind: mysqlEnum("kind", ["plogad", "spolad", "draget"]).notNull(),
+  /** User who registered the action. */
+  userId: int("userId"),
+  /** Display name of the registering user. */
+  byName: varchar("byName", { length: 120 }).notNull(),
+  /** Optional helper names, comma-separated. */
+  helpers: text("helpers"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Effort = typeof efforts.$inferSelect;
+export type InsertEffort = typeof efforts.$inferInsert;
+
+/**
+ * Refueling / fuel receipts log. Auditable record of fuel purchased for rink or
+ * ski-track maintenance. Each row is owned by the registering user (ansvarig).
+ */
+export const refuelings = mysqlTable("refuelings", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Which area the fuel was for. */
+  area: mysqlEnum("area", ["hockeyrink", "skidspar"]).notNull(),
+  /** Responsible/registering user. */
+  userId: int("userId").notNull(),
+  responsibleName: varchar("responsibleName", { length: 120 }).notNull(),
+  /** Amount in SEK (öre stored as integer to avoid float errors). */
+  amountOre: int("amountOre").notNull(),
+  /** Optional litres, stored as integer hundredths (e.g. 12.50 L = 1250). */
+  litresCenti: int("litresCenti"),
+  /** Payment method: ABK fuel card (no reimbursement) or own money (utlägg). */
+  paymentMethod: mysqlEnum("paymentMethod", ["tankkort_abk", "egen"]).notNull(),
+  /** For own-pay utlägg: has the person been reimbursed by the association? */
+  reimbursed: boolean("reimbursed").default(false).notNull(),
+  reimbursedAt: timestamp("reimbursedAt"),
+  note: text("note"),
+  /** Receipt image URL (R2 or /uploads). */
+  receiptUrl: varchar("receiptUrl", { length: 512 }),
+  /** Date of the refueling (may differ from createdAt). */
+  purchasedAt: timestamp("purchasedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Refueling = typeof refuelings.$inferSelect;
+export type InsertRefueling = typeof refuelings.$inferInsert;
+
+/**
  * Stores the platform-managed Heartbeat cron task uid for the weekly
  * duty reminder job, so it can be looked up / updated later.
  */
