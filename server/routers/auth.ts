@@ -73,7 +73,7 @@ export const authRouter = router({
         maxAge: SESSION_TTL_SECONDS * 1000,
       });
 
-      return sanitize(user);
+      return { ...sanitize(user), token };
     }),
 
   // Log in with email + password.
@@ -107,7 +107,7 @@ export const authRouter = router({
         maxAge: SESSION_TTL_SECONDS * 1000,
       });
 
-      return sanitize(user);
+      return { ...sanitize(user), token };
     }),
 
   logout: publicProcedure.mutation(({ ctx }) => {

@@ -27,6 +27,11 @@ export function useAuth() {
         return;
       }
     } finally {
+      try {
+        sessionStorage.removeItem("session-token");
+      } catch {
+        // ignore
+      }
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }

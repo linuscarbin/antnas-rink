@@ -39,12 +39,15 @@ export function getSessionCookieOptions(
   //       ? hostname
   //       : undefined;
 
-  // Self-hosted app served on its own origin (not an iframe), so `lax` is the
-  // correct, secure default and works on http (local) and https (prod).
+  // When served over HTTPS (e.g. the Manus preview iframe on another origin, or
+  // production behind a TLS proxy) the session cookie must be `SameSite=None`
+  // + `Secure` to be sent in a cross-site context. On plain http (local dev)
+  // fall back to `Lax` since browsers reject `Secure` cookies over http.
+  const secure = isSecureRequest(req);
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "lax",
-    secure: isSecureRequest(req),
+    sameSite: secure ? "none" : "lax",
+    secure,
   };
 }

@@ -24,8 +24,17 @@ export default function Login() {
     if (isAuthenticated) navigate("/");
   }, [isAuthenticated, navigate]);
 
+  const persistToken = (token?: string) => {
+    try {
+      if (token) sessionStorage.setItem("session-token", token);
+    } catch {
+      // ignore
+    }
+  };
+
   const login = trpc.auth.login.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      persistToken((data as { token?: string }).token);
       await utils.auth.me.invalidate();
       await refresh();
       toast.success("Inloggad!");
@@ -34,7 +43,8 @@ export default function Login() {
     onError: (e) => toast.error(e.message),
   });
   const register = trpc.auth.register.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      persistToken((data as { token?: string }).token);
       await utils.auth.me.invalidate();
       await refresh();
       toast.success("Konto skapat!");

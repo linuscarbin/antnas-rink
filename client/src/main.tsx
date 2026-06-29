@@ -42,6 +42,19 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
+      headers() {
+        // Fallback for cross-site iframe contexts (e.g. the preview) where the
+        // session cookie may be blocked. We mirror the session token into
+        // sessionStorage on login and forward it as a Bearer token. The normal
+        // cookie flow still takes priority server-side.
+        try {
+          const token = sessionStorage.getItem("session-token");
+          if (token) return { Authorization: `Bearer ${token}` };
+        } catch {
+          // sessionStorage unavailable
+        }
+        return {};
+      },
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
