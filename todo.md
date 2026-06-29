@@ -85,4 +85,4 @@
 - [x] Disk-fallback när R2 ej konfigurerat (dev) — verifierat
 - [x] chat.post accepterar både R2- och /uploads-URL
 - [x] README/compose/env: R2-konfiguration för Coolify
-- [ ] Testa och pusha till GitHub
+- [x] Testa (30 tester) och pusha till GitHub

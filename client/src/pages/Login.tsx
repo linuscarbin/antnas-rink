@@ -63,7 +63,7 @@ export default function Login() {
             <Snowflake className="h-5 w-5" />
           </span>
           <span className="font-extrabold text-xl tracking-tight">
-            Antnäs<span className="text-primary"> Rink</span>
+            Antnäs<span className="text-primary"> Vinter</span>
           </span>
         </Link>
 
