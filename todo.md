@@ -170,3 +170,12 @@
 - [x] Frontend: dokumentsida (lista per kategori + nedladdning) + admin-hantering
 - [x] Verifierad via API (bingo-info, dokument)
 - [x] Pusha till privat GitHub-repo
+
+## Bilbingo-påminnelser (dagen innan)
+- [x] Logik: hitta tillfällen imorgon, maila tilldelade familjer (med e-post) + separat mejl till kvällsansvarig (leadEmail)
+- [x] Undvik dubbelutskick (marker per tillfälle i systemSettings)
+- [x] Koppla till self-hosted cron (daglig körning, BINGO_REMINDER_CRON)
+- [x] Admin: "skicka påminnelse (imorgon) nu"
+- [x] Vitest för isTomorrow-logik (48 tester gröna)
+- [x] env-mall: BINGO_REMINDER_CRON
+- [x] Pusha till privat GitHub-repo

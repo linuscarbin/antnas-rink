@@ -1,0 +1,1 @@
+ALTER TABLE `bilbingoOccasions` ADD `leadEmail` varchar(320);

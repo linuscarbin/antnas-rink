@@ -314,6 +314,7 @@ export const bilbingoOccasions = mysqlTable("bilbingoOccasions", {
   /** Evening lead / kvällsansvarig for this occasion. */
   leadName: varchar("leadName", { length: 120 }),
   leadPhone: varchar("leadPhone", { length: 40 }),
+  leadEmail: varchar("leadEmail", { length: 320 }),
   note: text("note"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

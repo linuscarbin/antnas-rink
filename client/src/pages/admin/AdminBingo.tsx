@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDay, formatTime } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
 import {
+  Bell,
   CalendarPlus,
   Copy,
   Link2,
@@ -66,6 +67,7 @@ export default function AdminBingo() {
   const [target, setTarget] = useState("20");
   const [leadName, setLeadName] = useState("");
   const [leadPhone, setLeadPhone] = useState("");
+  const [leadEmail, setLeadEmail] = useState("");
 
   const createOccasion = trpc.bingo.createOccasion.useMutation({
     onSuccess: () => {
@@ -126,6 +128,13 @@ export default function AdminBingo() {
     },
     onError: (e) => toast.error(e.message),
   });
+  const sendReminders = trpc.bingo.sendRemindersNow.useMutation({
+    onSuccess: (r) =>
+      toast.success(
+        `Påminnelser: ${r.sent} mejl för ${r.occasions} tillfälle(n) imorgon.`
+      ),
+    onError: (e) => toast.error(e.message),
+  });
   const [addTo, setAddTo] = useState<{ occasionId: number; familyId: string }>({
     occasionId: 0,
     familyId: "",
@@ -141,9 +150,11 @@ export default function AdminBingo() {
       targetCount: parseInt(target, 10) || 20,
       leadName: leadName || undefined,
       leadPhone: leadPhone || undefined,
+      leadEmail: leadEmail || undefined,
     });
     setLeadName("");
     setLeadPhone("");
+    setLeadEmail("");
   }
 
   function copyLink(token: string) {
@@ -231,6 +242,10 @@ export default function AdminBingo() {
               <Label className="text-xs">Ansvarigs telefon</Label>
               <Input value={leadPhone} onChange={(e) => setLeadPhone(e.target.value)} placeholder="070-..." />
             </div>
+            <div className="space-y-1.5 col-span-2">
+              <Label className="text-xs">Ansvarigs e-post (för påminnelse)</Label>
+              <Input value={leadEmail} onChange={(e) => setLeadEmail(e.target.value)} placeholder="namn@exempel.se" />
+            </div>
           </div>
           <Button className="w-full font-semibold" onClick={addOccasion} disabled={createOccasion.isPending}>
             Lägg till tillfälle
@@ -316,14 +331,26 @@ export default function AdminBingo() {
             <Shuffle className="h-5 w-5 text-primary" />
             <h3 className="font-extrabold text-lg">Fördela arbetspass</h3>
           </div>
-          <Button
-            onClick={() => distribute.mutate({ season })}
-            disabled={distribute.isPending}
-            className="font-semibold gap-1.5"
-          >
-            <Shuffle className="h-4 w-4" />
-            Fördela automatiskt
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="bg-card gap-1.5"
+              onClick={() => sendReminders.mutate()}
+              disabled={sendReminders.isPending}
+              title="Mejla funktionärer och kvällsansvarig för morgondagens tillfälle"
+            >
+              <Bell className="h-4 w-4" />
+              Skicka påminnelse (imorgon)
+            </Button>
+            <Button
+              onClick={() => distribute.mutate({ season })}
+              disabled={distribute.isPending}
+              className="font-semibold gap-1.5"
+            >
+              <Shuffle className="h-4 w-4" />
+              Fördela automatiskt
+            </Button>
+          </div>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
           {totalActive} aktiva barn i {teamsQuery.data?.length ?? 0} lag ·{" "}

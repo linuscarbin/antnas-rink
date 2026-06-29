@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { distributeShifts } from "@shared/bingo";
+import { sendBilbingoReminders } from "../bingoReminder";
 import * as db from "../db";
 import {
   adminProcedure,
@@ -32,6 +33,7 @@ export const bingoRouter = router({
         targetCount: z.number().int().min(1).max(200).default(20),
         leadName: z.string().max(120).optional(),
         leadPhone: z.string().max(40).optional(),
+        leadEmail: z.string().max(320).optional(),
         note: z.string().max(500).optional(),
       })
     )
@@ -43,6 +45,7 @@ export const bingoRouter = router({
         targetCount: input.targetCount,
         leadName: input.leadName || null,
         leadPhone: input.leadPhone || null,
+        leadEmail: input.leadEmail || null,
         note: input.note || null,
       })
     ),
@@ -56,6 +59,7 @@ export const bingoRouter = router({
         targetCount: z.number().int().min(1).max(200).optional(),
         leadName: z.string().max(120).nullable().optional(),
         leadPhone: z.string().max(40).nullable().optional(),
+        leadEmail: z.string().max(320).nullable().optional(),
         note: z.string().max(500).nullable().optional(),
       })
     )
@@ -238,4 +242,9 @@ export const bingoRouter = router({
       await db.setAssignmentLocked(input.id, input.locked);
       return { success: true } as const;
     }),
+
+  // Admin: manually trigger reminders for occasions happening tomorrow.
+  sendRemindersNow: adminProcedure.mutation(async () => {
+    return sendBilbingoReminders(new Date(), true);
+  }),
 });

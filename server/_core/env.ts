@@ -15,6 +15,10 @@ export const ENV = {
   // Default: Mondays at 07:00. Set empty to disable.
   dutyReminderCron: process.env.DUTY_REMINDER_CRON ?? "0 7 * * 1",
 
+  // Daily cron for bilbingo reminders (day before each occasion).
+  // Default: every day at 17:00 server time. Set empty to disable.
+  bingoReminderCron: process.env.BINGO_REMINDER_CRON ?? "0 17 * * *",
+
   // Directory where uploaded board images are stored (disk fallback when R2
   // is not configured). In Coolify with R2 this is not needed.
   uploadDir:

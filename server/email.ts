@@ -63,14 +63,14 @@ export function emailLayout(title: string, bodyHtml: string): string {
   return `<!doctype html><html><body style="margin:0;background:#f4f6f8;font-family:Helvetica,Arial,sans-serif;color:#0f172a;">
   <div style="max-width:520px;margin:0 auto;padding:32px 16px;">
     <div style="background:#0d9488;color:#ffffff;padding:20px 24px;border-radius:16px 16px 0 0;font-weight:800;font-size:20px;letter-spacing:-0.5px;">
-      Antnäs Hockeyrink
+      Antnäs BK
     </div>
     <div style="background:#ffffff;padding:24px;border-radius:0 0 16px 16px;border:1px solid #e2e8f0;border-top:none;">
       <h1 style="font-size:18px;margin:0 0 12px;">${title}</h1>
       ${bodyHtml}
     </div>
     <p style="color:#94a3b8;font-size:12px;margin-top:16px;text-align:center;">
-      Detta är ett automatiskt meddelande från Antnäs Hockeyrink.
+      Detta är ett automatiskt meddelande från Antnäs BK.
     </p>
   </div></body></html>`;
 }

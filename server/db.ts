@@ -780,6 +780,19 @@ export async function deleteAssignment(id: number) {
   await db.delete(bingoAssignments).where(eq(bingoAssignments.id, id));
 }
 
+/** Families assigned to a given occasion (with contact info). */
+export async function getFamiliesForOccasion(occasionId: number) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(bingoAssignments)
+    .where(eq(bingoAssignments.occasionId, occasionId));
+  const famIds = rows.map((r) => r.familyId);
+  if (famIds.length === 0) return [];
+  const allFams = await db.select().from(families);
+  return allFams.filter((f) => famIds.includes(f.id));
+}
+
 export async function setAssignmentLocked(id: number, locked: boolean) {
   const db = await requireDb();
   await db

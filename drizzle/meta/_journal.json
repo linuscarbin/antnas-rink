@@ -71,6 +71,13 @@
       "when": 1782759755748,
       "tag": "0009_bouncy_jasper_sitwell",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1782760839852,
+      "tag": "0010_faulty_franklin_richards",
+      "breakpoints": true
     }
   ]
 }
