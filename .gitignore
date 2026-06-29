@@ -116,3 +116,6 @@ client/public/__manus__/version.json
 # Manus runtime logs
 .manus-logs/
 client/public/__manus__/
+
+# Local uploaded images (dev)
+uploads/

@@ -66,4 +66,15 @@
 - [x] Skidspårssida (status + spårjour-schema)
 - [x] Admin: hantera spårjour
 - [x] Vitest för spårlogik (22 tester gröna)
+- [x] Pusha uppdatering till privat GitHub-repo (linuscarbin/antnas-rink)
+
+## Anslagstavla – bilder + hela Antnäs Vinter
+- [x] Schema: imageUrl på chatMessages
+- [x] Backend: bilduppladdning till disk (UPLOAD_DIR), serveras via /uploads
+- [x] Backend: validering (typ, storlek) + komprimering (sharp -> webp)
+- [x] chat.post tar emot valfri bild
+- [x] Frontend: bifoga/förhandsgranska/skicka bild i anslagstavlan
+- [x] Visa bilder i tråden (klickbar/förstora)
+- [x] Texter: anslagstavlan gäller hela Antnäs Vinter (rink + skidspår)
+- [x] README + docker-compose: persistent volym i Coolify för uppladdningar
 - [ ] Pusha uppdatering till privat GitHub-repo

@@ -1,0 +1,1 @@
+ALTER TABLE `chatMessages` ADD `imageUrl` varchar(512);

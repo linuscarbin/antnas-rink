@@ -33,6 +33,10 @@ ENV PORT=3000
 
 WORKDIR /app
 
+# Create the default uploads directory (override path with UPLOAD_DIR / a volume).
+RUN mkdir -p /data/uploads
+ENV UPLOAD_DIR=/data/uploads
+
 # Copy only what's needed to run the production server
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist

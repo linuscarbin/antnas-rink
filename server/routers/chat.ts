@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "../db";
 import {
@@ -15,14 +16,32 @@ export const chatRouter = router({
       return db.listChatMessages(input?.afterId);
     }),
 
-  // Logged-in: post a message.
+  // Logged-in: post a message, optionally with an uploaded image URL.
   post: protectedProcedure
-    .input(z.object({ content: z.string().min(1).max(1000) }))
+    .input(
+      z.object({
+        content: z.string().max(1000),
+        imageUrl: z.string().max(512).optional().nullable(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
+      const text = input.content.trim();
+      if (!text && !input.imageUrl) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Skriv något eller bifoga en bild.",
+        });
+      }
+      // Only allow our own uploads path.
+      const imageUrl =
+        input.imageUrl && input.imageUrl.startsWith("/uploads/")
+          ? input.imageUrl
+          : null;
       return db.createChatMessage({
         userId: ctx.user.id,
         authorName: ctx.user.name || ctx.user.email || "Okänd",
-        content: input.content,
+        content: text,
+        imageUrl,
       });
     }),
 

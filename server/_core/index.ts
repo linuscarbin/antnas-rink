@@ -6,6 +6,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { startScheduler } from "./scheduler";
+import { registerUploads } from "./uploads";
 import { serveStatic, setupVite } from "./vite";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -35,6 +36,9 @@ async function startServer() {
 
   // Health endpoint for Coolify / uptime checks.
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
+
+  // Image uploads for the community board (disk-backed).
+  registerUploads(app);
 
   // tRPC API
   app.use(

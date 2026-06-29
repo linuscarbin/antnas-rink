@@ -35,8 +35,12 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       MAIL_FROM: ${MAIL_FROM:-Antnäs Hockeyrink <onboarding@resend.dev>}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads_data:/data/uploads
     ports:
       - "3000:3000"
 
 volumes:
   db_data:
+  uploads_data:

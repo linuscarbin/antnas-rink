@@ -182,6 +182,8 @@ export const chatMessages = mysqlTable("chatMessages", {
   userId: int("userId").notNull(),
   authorName: varchar("authorName", { length: 120 }).notNull(),
   content: text("content").notNull(),
+  /** Optional uploaded image URL (served from the uploads folder). */
+  imageUrl: varchar("imageUrl", { length: 512 }),
   /** Soft-delete flag for admin moderation. */
   deleted: boolean("deleted").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

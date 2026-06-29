@@ -59,6 +59,7 @@ Det **första kontot som registreras blir automatiskt administratör** (ägare).
 | `MAIL_FROM` | Nej | Avsändaradress, t.ex. `Antnäs Hockeyrink <noreply@dindomän.se>` |
 | `PUBLIC_BASE_URL` | Nej | Publik URL till sajten (för e-postlänkar) |
 | `DUTY_REMINDER_CRON` | Nej | Cron (5-fält, serverns tidszon) för jourpåminnelse (rink + spår). Standard `0 7 * * 1` (måndag 07:00). Tomt = av |
+| `UPLOAD_DIR` | Nej | Mapp där uppladdade bilder (anslagstavlan) sparas. Standard `/data/uploads` i produktion. Montera en persistent volym hit i Coolify |
 
 \* Rekommenderas för att jourpåminnelser och konfliktlarm ska skickas.
 
@@ -85,6 +86,11 @@ Det **första kontot som registreras blir automatiskt administratör** (ägare).
    Den self-hostade schemaläggaren startar automatiskt.
 7. **Första kontot:** Gå till `/login`, välj *Skapa konto* och registrera dig —
    det blir admin. Lägg sedan in jourscheman och kontakter via adminpanelen.
+8. **Persistent lagring för bilder:** Anslagstavlan tillåter bilduppladdning som
+   sparas på disk i `UPLOAD_DIR` (default `/data/uploads`). I Coolify, lägg till en
+   **Persistent Storage / Volume** monterad på `/data` (eller direkt på
+   `/data/uploads`) så att bilderna överlever omstarter och omdeployer. Utan
+   volym försvinner uppladdade bilder när containern startas om.
 
 ### docker-compose (lokalt / referens)
 

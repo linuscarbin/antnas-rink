@@ -14,4 +14,11 @@ export const ENV = {
   // Weekly duty reminder cron (node-cron, 5-field, server local time).
   // Default: Mondays at 07:00. Set empty to disable.
   dutyReminderCron: process.env.DUTY_REMINDER_CRON ?? "0 7 * * 1",
+
+  // Directory where uploaded board images are stored. In Coolify, mount a
+  // persistent volume here so images survive restarts/redeploys.
+  // Falls back to a local ./uploads folder when /data is not writable (dev).
+  uploadDir:
+    process.env.UPLOAD_DIR ??
+    (process.env.NODE_ENV === "production" ? "/data/uploads" : "./uploads"),
 };
