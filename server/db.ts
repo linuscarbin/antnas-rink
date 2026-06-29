@@ -6,8 +6,10 @@ import {
   contacts,
   dutySchedule,
   efforts,
+  expenses,
   InsertBooking,
   InsertEffort,
+  InsertExpense,
   InsertChatMessage,
   InsertContact,
   InsertDutySchedule,
@@ -564,6 +566,50 @@ export async function setRefuelingReimbursed(id: number, reimbursed: boolean) {
     .set({ reimbursed, reimbursedAt: reimbursed ? new Date() : null })
     .where(eq(refuelings.id, id));
   return getRefueling(id);
+}
+
+/* ---------------------------- Expenses ---------------------------- */
+
+export async function listExpenses(area?: "hockeyrink" | "skidspar") {
+  const db = await requireDb();
+  if (area) {
+    return db
+      .select()
+      .from(expenses)
+      .where(eq(expenses.area, area))
+      .orderBy(desc(expenses.purchasedAt));
+  }
+  return db.select().from(expenses).orderBy(desc(expenses.purchasedAt));
+}
+
+export async function createExpense(data: InsertExpense) {
+  const db = await requireDb();
+  const result = await db.insert(expenses).values(data).$returningId();
+  return getExpense(result[0].id);
+}
+
+export async function getExpense(id: number) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(expenses)
+    .where(eq(expenses.id, id))
+    .limit(1);
+  return rows[0];
+}
+
+export async function deleteExpense(id: number) {
+  const db = await requireDb();
+  await db.delete(expenses).where(eq(expenses.id, id));
+}
+
+export async function setExpenseReimbursed(id: number, reimbursed: boolean) {
+  const db = await requireDb();
+  await db
+    .update(expenses)
+    .set({ reimbursed, reimbursedAt: reimbursed ? new Date() : null })
+    .where(eq(expenses.id, id));
+  return getExpense(id);
 }
 
 /* -------------------------- System settings ----------------------- */

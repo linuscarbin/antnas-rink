@@ -8,6 +8,7 @@ import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
 import { getIsoWeek } from "@shared/rink";
 import RefuelSection from "@/components/RefuelSection";
+import ExpenseSection from "@/components/ExpenseSection";
 import { Input } from "@/components/ui/input";
 import {
   CheckCircle2,
@@ -354,6 +355,7 @@ export default function Home() {
       </div>
 
       <RefuelSection area="hockeyrink" />
+      <ExpenseSection area="hockeyrink" />
     </SiteLayout>
   );
 }

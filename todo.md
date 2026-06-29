@@ -132,3 +132,12 @@
 - [x] Export: ladda ner kvitton (ZIP) + enskilda kvittolänkar
 - [x] Frontend: tankningssektion på Hockeyrink + Skidspår
 - [x] Pusha till privat GitHub-repo
+
+## Övriga utlägg
+- [x] Schema: expenses-tabell (område, datum, belopp, kategori, notering, betalsätt, återbetald, kvitto-URL, ansvarig)
+- [x] DB-hjälpfunktioner för expenses
+- [x] Router: skapa/lista/summering/återbetalning/ta bort
+- [x] Export: CSV + ZIP med kvitton (periodfilter)
+- [x] Frontend: ExpenseSection på Hockeyrink + Skidspår
+- [x] Verifierad via API (skapa/summering/CSV)
+- [x] Pusha till privat GitHub-repo

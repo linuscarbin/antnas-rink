@@ -40,6 +40,11 @@ const AREA_LABEL: Record<Area, string> = {
   skidspar: "Skidspår",
 };
 
+const PAYMENT_LABEL_EXPORT: Record<string, string> = {
+  tankkort_abk: "Tankkort ABK",
+  egen: "Egen betalning",
+};
+
 /**
  * Registers auditor-facing export endpoints (login required):
  *  - GET /api/refuelings/export.csv?area=...   → CSV of all refuelings
@@ -156,6 +161,114 @@ export function registerRefuelExport(app: Express) {
       await archive.finalize();
     } catch (error) {
       console.error("[RefuelExport] ZIP failed:", error);
+      try {
+        res.status(500).json({ error: "Export misslyckades." });
+      } catch {
+        /* noop */
+      }
+    }
+  });
+
+  // ---- Other expenses (övriga utlägg) ----
+
+  app.get("/api/expenses/export.csv", async (req: Request, res: Response) => {
+    try {
+      const user = await authenticateRequest(req);
+      if (!user) return res.status(401).json({ error: "Inloggning krävs." });
+      const area = parseArea(req);
+      const { from, to } = parsePeriod(req);
+      const rows = (await db.listExpenses(area ?? undefined)).filter((r) =>
+        inPeriod(new Date(r.purchasedAt), from, to)
+      );
+      const header = [
+        "Datum",
+        "Område",
+        "Ansvarig",
+        "Kategori",
+        "Belopp (kr)",
+        "Betalsätt",
+        "Återbetald",
+        "Notering",
+        "Kvitto-URL",
+      ];
+      const lines = [header.join(",")];
+      for (const r of rows) {
+        lines.push(
+          [
+            csvCell(new Date(r.purchasedAt).toLocaleDateString("sv-SE")),
+            csvCell(AREA_LABEL[r.area as Area]),
+            csvCell(r.responsibleName),
+            csvCell(r.category ?? ""),
+            csvCell((r.amountOre / 100).toFixed(2)),
+            csvCell(PAYMENT_LABEL_EXPORT[r.paymentMethod]),
+            csvCell(
+              r.paymentMethod === "egen" ? (r.reimbursed ? "Ja" : "Nej") : "-"
+            ),
+            csvCell(r.note ?? ""),
+            csvCell(r.receiptUrl ?? ""),
+          ].join(",")
+        );
+      }
+      const csv = "\uFEFF" + lines.join("\n");
+      const suffix = area ? `-${area}` : "";
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="ovriga-utlagg${suffix}.csv"`
+      );
+      res.send(csv);
+    } catch (error) {
+      console.error("[ExpenseExport] CSV failed:", error);
+      res.status(500).json({ error: "Export misslyckades." });
+    }
+  });
+
+  app.get("/api/expenses/receipts.zip", async (req: Request, res: Response) => {
+    try {
+      const user = await authenticateRequest(req);
+      if (!user) return res.status(401).json({ error: "Inloggning krävs." });
+      const area = parseArea(req);
+      const { from, to } = parsePeriod(req);
+      const rows = (await db.listExpenses(area ?? undefined)).filter(
+        (r) => r.receiptUrl && inPeriod(new Date(r.purchasedAt), from, to)
+      );
+      const suffix = area ? `-${area}` : "";
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="ovriga-utlagg-kvitton${suffix}.zip"`
+      );
+      const archive = new ZipArchive({ zlib: { level: 9 } });
+      archive.on("error", (err: Error) => {
+        console.error("[ExpenseExport] ZIP error:", err);
+        try {
+          res.status(500).end();
+        } catch {
+          /* noop */
+        }
+      });
+      archive.pipe(res);
+      const origin = `${req.protocol}://${req.get("host")}`;
+      for (const r of rows) {
+        if (!r.receiptUrl) continue;
+        const url = r.receiptUrl.startsWith("/")
+          ? `${origin}${r.receiptUrl}`
+          : r.receiptUrl;
+        try {
+          const resp = await fetch(url);
+          if (!resp.ok) continue;
+          const buf = Buffer.from(await resp.arrayBuffer());
+          const date = new Date(r.purchasedAt).toISOString().slice(0, 10);
+          const ext = url.split(".").pop()?.split("?")[0] || "img";
+          const safeName = `${date}_${r.responsibleName.replace(/[^\w]+/g, "-")}_${(r.amountOre / 100).toFixed(0)}kr_id${r.id}.${ext}`;
+          archive.append(buf, { name: safeName });
+        } catch (e) {
+          console.warn("[ExpenseExport] could not fetch receipt", url, e);
+        }
+      }
+      await archive.finalize();
+    } catch (error) {
+      console.error("[ExpenseExport] ZIP failed:", error);
       try {
         res.status(500).json({ error: "Export misslyckades." });
       } catch {

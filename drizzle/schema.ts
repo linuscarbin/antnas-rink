@@ -245,6 +245,30 @@ export type Refueling = typeof refuelings.$inferSelect;
 export type InsertRefueling = typeof refuelings.$inferInsert;
 
 /**
+ * Other expenses (övriga utlägg): parts, materials, tools etc.
+ * Mirrors refuelings but with a free-text category instead of litres.
+ */
+export const expenses = mysqlTable("expenses", {
+  id: int("id").autoincrement().primaryKey(),
+  area: mysqlEnum("area", ["hockeyrink", "skidspar"]).notNull(),
+  userId: int("userId").notNull(),
+  responsibleName: varchar("responsibleName", { length: 120 }).notNull(),
+  amountOre: int("amountOre").notNull(),
+  /** Free-text category, e.g. "Reservdelar", "Material", "Verktyg". */
+  category: varchar("category", { length: 120 }),
+  paymentMethod: mysqlEnum("paymentMethod", ["tankkort_abk", "egen"]).notNull(),
+  reimbursed: boolean("reimbursed").default(false).notNull(),
+  reimbursedAt: timestamp("reimbursedAt"),
+  note: text("note"),
+  receiptUrl: varchar("receiptUrl", { length: 512 }),
+  purchasedAt: timestamp("purchasedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Expense = typeof expenses.$inferSelect;
+export type InsertExpense = typeof expenses.$inferInsert;
+
+/**
  * Stores the platform-managed Heartbeat cron task uid for the weekly
  * duty reminder job, so it can be looked up / updated later.
  */

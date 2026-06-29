@@ -18,6 +18,7 @@ import { getIsoWeek } from "@shared/rink";
 import { AlertTriangle, Phone, Snowflake, Trees, Undo2 } from "lucide-react";
 import { Leaderboard } from "./Home";
 import RefuelSection from "@/components/RefuelSection";
+import ExpenseSection from "@/components/ExpenseSection";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -326,6 +327,7 @@ export default function Skidspar() {
       </div>
 
       <RefuelSection area="skidspar" />
+      <ExpenseSection area="skidspar" />
 
       {/* Ski duty schedule */}
       <div className="container pb-12">
