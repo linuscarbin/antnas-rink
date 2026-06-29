@@ -8,6 +8,7 @@ import {
   type LucideIcon,
   MessageSquare,
   Snowflake,
+  Trees,
   Users,
 } from "lucide-react";
 import { ReactNode } from "react";
@@ -15,6 +16,7 @@ import { Link, useLocation } from "wouter";
 
 const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "Status", icon: Snowflake },
+  { href: "/skidspar", label: "Skidspår", icon: Trees },
   { href: "/schema", label: "Schema", icon: CalendarDays },
   { href: "/boka", label: "Boka", icon: CalendarDays },
   { href: "/anslagstavla", label: "Anslagstavla", icon: MessageSquare },
@@ -34,7 +36,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
               <Snowflake className="h-5 w-5" />
             </span>
             <span className="font-extrabold text-lg leading-none tracking-tight">
-              Antnäs<span className="text-primary"> Rink</span>
+              Antnäs<span className="text-primary"> Vinter</span>
             </span>
           </Link>
 
@@ -128,8 +130,8 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
 
       <footer className="border-t border-border/70 bg-background/70">
         <div className="container py-6 text-sm text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span className="font-semibold text-foreground">Antnäs Hockeyrink</span>
-          <span>Byns gemensamma isbana — plogad &amp; spolad av oss tillsammans.</span>
+          <span className="font-semibold text-foreground">Antnäs Vinter</span>
+          <span>Byns hockeyrink och skidspår — skött av oss tillsammans.</span>
         </div>
       </footer>
     </div>

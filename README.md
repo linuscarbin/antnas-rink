@@ -1,17 +1,22 @@
-# Antnäs Hockeyrink
+# Antnäs Vinter
 
-En fristående webbtjänst för att sköta byns hockeyrink i Antnäs. Visar rinkstatus
-(plogad/spolad), veckans plog- och spoljour, kontaktpersoner, bokning av rinken
-eller zoner, och en gemensam anslagstavla/chatt. Helt självhostad — ingen extern
-plattform krävs utöver en MySQL-databas och (valfritt) Resend för e-post.
+En fristående webbtjänst för byns vinteranläggningar i Antnäs: **hockeyrinken** och
+**längdskidspåret**. Visar rinkstatus (plogad/spolad), spårstatus (draget +
+spårskick), veckans jourer (plogjour/spoljour för rinken och en separat spårjour
+för spåret), kontaktpersoner, bokning av rinken eller zoner, och en gemensam
+anslagstavla/chatt. Helt självhostad — ingen extern plattform krävs utöver en
+MySQL-databas och (valfritt) Resend för e-post.
 
 ## Funktioner
 
 - **Rinkstatus** – stora färgkodade kort för *plogad* och *spolad* med tidsstämpel
   och namn på den som senast utförde åtgärden, plus aktuell utomhustemperatur
   (Open-Meteo, kräver ingen nyckel) som beslutsstöd för spolning.
-- **Jourschema** – veckovis *plogjour* och *spoljour* med kontaktuppgifter, synligt
-  för alla. Tilldelade jourhavare kan anmäla förhinder direkt.
+- **Skidspår** – status för längdspåret: *draget* (med tidsstämpel + vem) och
+  *spårskick* (Mycket bra/Bra/Hyfsat/Dåligt/Ej åkbart) plus notering om underlag.
+- **Jourschema** – veckovis *plogjour* och *spoljour* för rinken samt en separat
+  *spårjour* för skidspåret, med kontaktuppgifter. Tilldelade jourhavare kan anmäla
+  förhinder direkt (admin meddelas via e-post).
 - **Kontaktpersoner** – lista med roller och telefon/e-post.
 - **Bokning** – boka *hela rinken*, *ena änden* eller *halva rinken* för tidsluckor,
   med 7-dagarsöversikt och krockkontroll per zon.
@@ -53,7 +58,7 @@ Det **första kontot som registreras blir automatiskt administratör** (ägare).
 | `RESEND_API_KEY` | Nej* | Resend API-nyckel för e-post. Utan denna loggas notiser i stället för att skickas |
 | `MAIL_FROM` | Nej | Avsändaradress, t.ex. `Antnäs Hockeyrink <noreply@dindomän.se>` |
 | `PUBLIC_BASE_URL` | Nej | Publik URL till sajten (för e-postlänkar) |
-| `DUTY_REMINDER_CRON` | Nej | Cron (5-fält, serverns tidszon) för jourpåminnelse. Standard `0 7 * * 1` (måndag 07:00). Tomt = av |
+| `DUTY_REMINDER_CRON` | Nej | Cron (5-fält, serverns tidszon) för jourpåminnelse (rink + spår). Standard `0 7 * * 1` (måndag 07:00). Tomt = av |
 
 \* Rekommenderas för att jourpåminnelser och konfliktlarm ska skickas.
 

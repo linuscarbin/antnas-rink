@@ -38,7 +38,7 @@
 - [x] Dockerfile för självhosting
 - [x] Coolify-konfiguration (docker-compose / env-mall)
 - [x] README med deploy-instruktioner och env-variabler
-- [ ] Privat GitHub-repo (antnas-rink)
+- [x] Privat GitHub-repo (linuscarbin/antnas-rink)
 
 ## Test
 - [x] Vitest för RBAC (publik/skyddad/admin)
@@ -54,3 +54,16 @@
 - [x] Ta bort Manus notification/storage-anrop och env-beroenden
 - [x] Rensa env-mall från Manus-variabler
 - [x] Uppdatera tester för ny auth (20 tester gröna)
+
+## Antnäs Vinter – skidspår
+- [x] Rebrand header/varumärke till "Antnäs Vinter"
+- [x] Schema: trackStatus (draget, spårskick, notering) + skiDutySchedule (egen spårjour-grupp)
+- [x] DB-hjälpfunktioner för spårstatus och spårjour
+- [x] tRPC track-router: status (publik läs, skyddad uppdatera draget/skick)
+- [x] tRPC skiDuty-router: publik läs, admin redigera, skyddad flagga förhinder
+- [x] E-postpåminnelse även för spårjour (egen grupp)
+- [x] Startsida: separat sektion för skidspår
+- [x] Skidspårssida (status + spårjour-schema)
+- [x] Admin: hantera spårjour
+- [x] Vitest för spårlogik (22 tester gröna)
+- [ ] Pusha uppdatering till privat GitHub-repo

@@ -12,11 +12,13 @@ import Kontakt from "./pages/Kontakt";
 import Login from "./pages/Login";
 import Profil from "./pages/Profil";
 import Schema from "./pages/Schema";
+import Skidspar from "./pages/Skidspar";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/skidspar" component={Skidspar} />
       <Route path="/schema" component={Schema} />
       <Route path="/boka" component={Boka} />
       <Route path="/anslagstavla" component={Anslagstavla} />

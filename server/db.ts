@@ -9,9 +9,12 @@ import {
   InsertChatMessage,
   InsertContact,
   InsertDutySchedule,
+  InsertSkiDutySchedule,
   InsertUser,
   rinkStatus,
+  skiDutySchedule,
   systemSettings,
+  trackStatus,
   users,
 } from "../drizzle/schema";
 
@@ -207,6 +210,117 @@ export async function setDutyConflict(
     .select()
     .from(dutySchedule)
     .where(eq(dutySchedule.id, id))
+    .limit(1);
+  return rows[0];
+}
+
+/* --------------------------- Track status ------------------------- */
+
+export async function getTrackStatus() {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(trackStatus)
+    .orderBy(trackStatus.id)
+    .limit(1);
+  if (rows.length === 0) {
+    await db.insert(trackStatus).values({});
+    const created = await db
+      .select()
+      .from(trackStatus)
+      .orderBy(trackStatus.id)
+      .limit(1);
+    return created[0];
+  }
+  return rows[0];
+}
+
+export async function updateTrackStatus(data: {
+  dragetAt?: Date | null;
+  dragetBy?: string | null;
+  condition?:
+    | "Mycket bra"
+    | "Bra"
+    | "Hyfsat"
+    | "Dåligt"
+    | "Ej åkbart"
+    | null;
+  note?: string | null;
+}) {
+  const db = await requireDb();
+  const current = await getTrackStatus();
+  await db.update(trackStatus).set(data).where(eq(trackStatus.id, current.id));
+  return getTrackStatus();
+}
+
+/* -------------------------- Ski duty schedule --------------------- */
+
+export async function listSkiDuties(year?: number) {
+  const db = await requireDb();
+  if (year !== undefined) {
+    return db
+      .select()
+      .from(skiDutySchedule)
+      .where(eq(skiDutySchedule.year, year))
+      .orderBy(skiDutySchedule.year, skiDutySchedule.week);
+  }
+  return db
+    .select()
+    .from(skiDutySchedule)
+    .orderBy(skiDutySchedule.year, skiDutySchedule.week);
+}
+
+export async function getSkiDuty(year: number, week: number) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(skiDutySchedule)
+    .where(
+      and(eq(skiDutySchedule.year, year), eq(skiDutySchedule.week, week))
+    )
+    .limit(1);
+  return rows[0];
+}
+
+export async function getSkiDutyById(id: number) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(skiDutySchedule)
+    .where(eq(skiDutySchedule.id, id))
+    .limit(1);
+  return rows[0];
+}
+
+export async function upsertSkiDuty(data: InsertSkiDutySchedule) {
+  const db = await requireDb();
+  const existing = await getSkiDuty(data.year, data.week);
+  if (existing) {
+    await db
+      .update(skiDutySchedule)
+      .set({ ...data })
+      .where(eq(skiDutySchedule.id, existing.id));
+    return getSkiDuty(data.year, data.week);
+  }
+  await db.insert(skiDutySchedule).values(data);
+  return getSkiDuty(data.year, data.week);
+}
+
+export async function deleteSkiDuty(id: number) {
+  const db = await requireDb();
+  await db.delete(skiDutySchedule).where(eq(skiDutySchedule.id, id));
+}
+
+export async function setSkiDutyConflict(id: number, conflict: boolean) {
+  const db = await requireDb();
+  await db
+    .update(skiDutySchedule)
+    .set({ sparjourConflict: conflict })
+    .where(eq(skiDutySchedule.id, id));
+  const rows = await db
+    .select()
+    .from(skiDutySchedule)
+    .where(eq(skiDutySchedule.id, id))
     .limit(1);
   return rows[0];
 }

@@ -6,7 +6,9 @@ import { chatRouter } from "./routers/chat";
 import { contactsRouter } from "./routers/contacts";
 import { dutyRouter } from "./routers/duty";
 import { scheduleRouter } from "./routers/schedule";
+import { skiDutyRouter } from "./routers/skiDuty";
 import { statusRouter } from "./routers/status";
+import { trackRouter } from "./routers/track";
 import { usersRouter } from "./routers/users";
 import { weatherRouter } from "./routers/weather";
 
@@ -21,6 +23,8 @@ export const appRouter = router({
   users: usersRouter,
   weather: weatherRouter,
   schedule: scheduleRouter,
+  track: trackRouter,
+  skiDuty: skiDutyRouter,
 });
 
 export type AppRouter = typeof appRouter;

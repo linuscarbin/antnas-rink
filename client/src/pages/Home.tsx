@@ -148,7 +148,7 @@ export default function Home() {
         <div className="container relative py-12 sm:py-16">
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
-              <Snowflake className="h-3.5 w-3.5" /> Antnäs byrink
+              <Snowflake className="h-3.5 w-3.5" /> Antnäs Vinter
             </span>
             <h1 className="mt-4 text-4xl sm:text-5xl font-extrabold leading-[1.05] tracking-tight">
               Är isen <span className="text-primary">åkbar</span> ikväll?
@@ -293,9 +293,62 @@ export default function Home() {
               </p>
             )}
           </div>
+
+          {/* Ski track shortcut */}
+          <TrackCard />
         </div>
       </div>
     </SiteLayout>
+  );
+}
+
+function TrackCard() {
+  const trackQuery = trpc.track.get.useQuery();
+  const t = trackQuery.data;
+  const dragetFresh = t?.dragetAt
+    ? Date.now() - new Date(t.dragetAt).getTime() < 48 * 3600 * 1000
+    : false;
+  return (
+    <div className="iso-card p-6">
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          Skidspåret
+        </div>
+        <Link href="/skidspar" className="text-sm font-semibold text-primary">
+          Öppna
+        </Link>
+      </div>
+      {trackQuery.isLoading ? (
+        <Skeleton className="mt-3 h-16" />
+      ) : (
+        <div className="mt-3 space-y-2 text-sm">
+          <div className="flex items-center gap-2">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{
+                background: dragetFresh
+                  ? "oklch(0.72 0.13 184)"
+                  : "oklch(0.75 0.16 75)",
+              }}
+            />
+            <span className="font-semibold">
+              {t?.dragetAt
+                ? dragetFresh
+                  ? "Draget nyligen"
+                  : "Kan behöva dras"
+                : "Ej draget"}
+            </span>
+            {t?.dragetAt && (
+              <span className="text-muted-foreground">{timeAgo(t.dragetAt)}</span>
+            )}
+          </div>
+          <div className="text-muted-foreground">
+            Spårskick:{" "}
+            <strong className="text-foreground">{t?.condition ?? "Ej bedömt"}</strong>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

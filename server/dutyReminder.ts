@@ -3,24 +3,28 @@ import * as db from "./db";
 import { emailLayout, sendEmail } from "./email";
 
 /**
- * Sends reminder emails to this week's plogjour and spoljour holders
- * (the ones linked to a user account with an email). Returns a summary.
- * Idempotent enough to be safe if triggered more than once.
+ * Sends reminder emails to this week's duty holders:
+ * rink plogjour/spoljour AND ski-track spårjour (a separate group).
+ * Each area is handled independently, so spårjour is reminded even on weeks
+ * with no rink duty, and vice versa. Returns a summary.
  */
 export async function sendWeeklyDutyReminders(now = new Date()) {
   const { year, week } = getIsoWeek(now);
-  const duty = await db.getDuty(year, week);
 
-  if (!duty) {
-    return { ok: true, skipped: "no-duty-this-week", year, week, sent: 0 };
-  }
-
-  const recipients: { email: string; role: string; name: string }[] = [];
+  const recipients: {
+    email: string;
+    role: string;
+    name: string;
+    area: "rink" | "skidspår";
+    note: string | null;
+  }[] = [];
 
   const addRecipient = async (
     userId: number | null,
     roleLabel: string,
-    fallbackName: string | null
+    fallbackName: string | null,
+    area: "rink" | "skidspår",
+    note: string | null
   ) => {
     if (!userId) return;
     const u = await db.getUserById(userId);
@@ -29,20 +33,42 @@ export async function sendWeeklyDutyReminders(now = new Date()) {
         email: u.email,
         role: roleLabel,
         name: u.name || fallbackName || "",
+        area,
+        note,
       });
     }
   };
 
-  await addRecipient(duty.plogjourUserId, "Plogjour", duty.plogjourName);
-  await addRecipient(duty.spoljourUserId, "Spoljour", duty.spoljourName);
+  // Rink duty (plogjour / spoljour).
+  const duty = await db.getDuty(year, week);
+  if (duty) {
+    await addRecipient(duty.plogjourUserId, "Plogjour", duty.plogjourName, "rink", duty.note);
+    await addRecipient(duty.spoljourUserId, "Spoljour", duty.spoljourName, "rink", duty.note);
+  }
+
+  // Ski-track duty (spårjour) — independent of rink duty.
+  const skiDuty = await db.getSkiDuty(year, week);
+  if (skiDuty) {
+    await addRecipient(
+      skiDuty.sparjourUserId,
+      "Spårjour",
+      skiDuty.sparjourName,
+      "skidspår",
+      skiDuty.note
+    );
+  }
 
   let sent = 0;
   for (const r of recipients) {
+    const areaText =
+      r.area === "rink"
+        ? "Tänk på att hålla rinken i skick och uppdatera statusen när du har plogat eller spolat."
+        : "Tänk på att dra spåret vid behov och uppdatera spårstatus och spårskick.";
     const body = `
       <p>Hej ${r.name || ""}!</p>
-      <p>Du står som <strong>${r.role.toLowerCase()}</strong> för Antnäs hockeyrink denna vecka (vecka ${week}, ${year}).</p>
-      <p>Tänk på att hålla rinken i skick och uppdatera statusen när du har plogat eller spolat.</p>
-      ${duty.note ? `<p>Notering: ${duty.note}</p>` : ""}
+      <p>Du står som <strong>${r.role.toLowerCase()}</strong> för Antnäs ${r.area} denna vecka (vecka ${week}, ${year}).</p>
+      <p>${areaText}</p>
+      ${r.note ? `<p>Notering: ${r.note}</p>` : ""}
     `;
     const result = await sendEmail({
       to: r.email,

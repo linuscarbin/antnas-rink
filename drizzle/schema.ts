@@ -83,6 +83,52 @@ export type DutySchedule = typeof dutySchedule.$inferSelect;
 export type InsertDutySchedule = typeof dutySchedule.$inferInsert;
 
 /**
+ * Single-row table holding the current cross-country ski track status.
+ */
+export const trackStatus = mysqlTable("trackStatus", {
+  id: int("id").autoincrement().primaryKey(),
+  /** When the track was last groomed/prepared (draget). Null = not done / unknown. */
+  dragetAt: timestamp("dragetAt"),
+  /** Name of the person who last groomed the track. */
+  dragetBy: varchar("dragetBy", { length: 120 }),
+  /** Track condition rating. */
+  condition: mysqlEnum("condition", [
+    "Mycket bra",
+    "Bra",
+    "Hyfsat",
+    "Dåligt",
+    "Ej åkbart",
+  ]),
+  /** Optional free-text note about surface (nysnö, isigt, blött etc.). */
+  note: text("note"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TrackStatus = typeof trackStatus.$inferSelect;
+export type InsertTrackStatus = typeof trackStatus.$inferInsert;
+
+/**
+ * Weekly ski-track duty schedule (spårjour). Separate duty group from the rink.
+ * One row per ISO week + year.
+ */
+export const skiDutySchedule = mysqlTable("skiDutySchedule", {
+  id: int("id").autoincrement().primaryKey(),
+  year: int("year").notNull(),
+  week: int("week").notNull(),
+  /** Spårjour (ski-track duty) responsible name. */
+  sparjourName: varchar("sparjourName", { length: 120 }),
+  sparjourPhone: varchar("sparjourPhone", { length: 40 }),
+  sparjourUserId: int("sparjourUserId"),
+  sparjourConflict: boolean("sparjourConflict").default(false).notNull(),
+  note: text("note"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SkiDutySchedule = typeof skiDutySchedule.$inferSelect;
+export type InsertSkiDutySchedule = typeof skiDutySchedule.$inferInsert;
+
+/**
  * Contact persons with defined roles, visible to all.
  */
 export const contacts = mysqlTable("contacts", {

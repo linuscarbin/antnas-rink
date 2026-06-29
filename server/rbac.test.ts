@@ -59,6 +59,18 @@ describe("RBAC", () => {
     ).rejects.toThrow();
   });
 
+  it("blocks anonymous users from updating ski track status", async () => {
+    const caller = appRouter.createCaller(ctx(null));
+    await expect(caller.track.markDraget({ done: true })).rejects.toThrow();
+  });
+
+  it("blocks normal users from editing ski duty schedule", async () => {
+    const caller = appRouter.createCaller(ctx(baseUser("user")));
+    await expect(
+      caller.skiDuty.upsert({ year: 2026, week: 1 })
+    ).rejects.toThrow();
+  });
+
   it("returns null from auth.me for anonymous", async () => {
     const caller = appRouter.createCaller(ctx(null));
     await expect(caller.auth.me()).resolves.toBeNull();
