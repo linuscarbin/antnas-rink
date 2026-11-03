@@ -6,11 +6,17 @@ import { isFunctionaryFor } from "../_core/functionary";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { notifyTopicLater } from "../push";
 
-export const rinkTeamsRouter = router({
-  // Public: teams + member names. Phone numbers only for rink functionaries.
-  list: publicProcedure.query(async ({ ctx }) => {
-    const showPhone = await isFunctionaryFor(ctx.user, "hockeyrink");
-    const teams = await db.listRinkTeams();
+const area = z.enum(["hockeyrink", "skidspar"]);
+const AREA_TEXT = {
+  hockeyrink: { jour: "rinkjouren", url: "/schema" },
+  skidspar: { jour: "spårjouren", url: "/skidspar" },
+} as const;
+
+export const dutyTeamsRouter = router({
+  // Public: an area's teams + member names. Phones only for its functionaries.
+  list: publicProcedure.input(z.object({ area })).query(async ({ ctx, input }) => {
+    const showPhone = await isFunctionaryFor(ctx.user, input.area);
+    const teams = await db.listRinkTeams(input.area);
     return teams.map((t) => ({
       id: t.id,
       name: t.name,
@@ -25,8 +31,8 @@ export const rinkTeamsRouter = router({
   }),
 
   create: adminProcedure
-    .input(z.object({ name: z.string().trim().min(1).max(80) }))
-    .mutation(async ({ input }) => ({ id: await db.createRinkTeam(input.name) })),
+    .input(z.object({ name: z.string().trim().min(1).max(80), area }))
+    .mutation(async ({ input }) => ({ id: await db.createRinkTeam(input.name, input.area) })),
 
   rename: adminProcedure
     .input(z.object({ id: z.number().int(), name: z.string().trim().min(1).max(80) }))
@@ -80,10 +86,14 @@ export const rinkTeamsRouter = router({
 
   // Public: who has "förhinder" which week (messages only for functionaries).
   absences: publicProcedure
-    .input(z.object({ year: z.number().int() }))
+    .input(z.object({ year: z.number().int(), area }))
     .query(async ({ ctx, input }) => {
-      const showMsg = await isFunctionaryFor(ctx.user, "hockeyrink");
-      return (await db.listAbsences(input.year)).map((a) => ({
+      const showMsg = await isFunctionaryFor(ctx.user, input.area);
+      const memberIds = new Set(
+        (await db.listRinkTeams(input.area)).flatMap((t) => t.members.map((m) => m.id))
+      );
+      const rows = (await db.listAbsences(input.year)).filter((a) => memberIds.has(a.memberId));
+      return rows.map((a) => ({
         year: a.year,
         week: a.week,
         memberId: a.memberId,
@@ -104,8 +114,9 @@ export const rinkTeamsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const member = await db.getRinkTeamMember(input.memberId);
-      const duty = await db.getDuty(input.year, input.week);
-      if (!member || !duty || duty.teamId !== member.teamId) {
+      const team = member ? await db.getRinkTeam(member.teamId) : undefined;
+      const duty = team ? await db.getAreaDuty(team.area, input.year, input.week) : undefined;
+      if (!member || !team || !duty || duty.teamId !== member.teamId) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Laget har inte jour den veckan." });
       }
       if (member.userId !== ctx.user.id && ctx.user.role !== "admin") {
@@ -114,24 +125,25 @@ export const rinkTeamsRouter = router({
       await db.setAbsence(input.year, input.week, member.id, input.absent, input.message || null);
 
       if (input.absent) {
-        const team = (await db.listRinkTeams()).find((t) => t.id === member.teamId);
-        const text = `${member.name} (${team?.name ?? "laget"}) kan inte rinkjouren vecka ${input.week}.`;
+        const t = AREA_TEXT[team.area];
+        const members = await db.listTeamMembers(team.id);
+        const text = `${member.name} (${team.name}) kan inte ${t.jour} vecka ${input.week}.`;
         const admins = await db.listAdmins();
         await sendEmail({
           to: admins.map((a) => a.email),
-          subject: `Förhinder: rinkjour vecka ${input.week}`,
+          subject: `Förhinder: ${t.jour} vecka ${input.week}`,
           html: emailLayout(
-            "Förhinder i rinkjouren",
+            `Förhinder i ${t.jour}`,
             `<p>${esc(text)}</p>${input.message ? `<p>Meddelande: ${esc(input.message)}</p>` : ""}`
           ),
         });
         const userIds = [
           ...admins.map((a) => a.id),
-          ...(team?.members ?? []).map((m) => m.userId).filter((u): u is number => u != null),
+          ...members.map((m) => m.userId).filter((u): u is number => u != null),
         ].filter((id) => id !== ctx.user.id);
         notifyTopicLater(
           "duty_conflict",
-          { title: "Förhinder i rinkjouren ⚠️", body: text, url: "/schema" },
+          { title: `Förhinder i ${t.jour} ⚠️`, body: text, url: t.url },
           { userIds: Array.from(new Set(userIds)) }
         );
       }

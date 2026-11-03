@@ -120,6 +120,13 @@
       "when": 1793735170548,
       "tag": "0016_violet_warstar",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1793735797934,
+      "tag": "0017_burly_wolf_cub",
+      "breakpoints": true
     }
   ]
 }

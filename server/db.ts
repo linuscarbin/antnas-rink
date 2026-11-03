@@ -921,14 +921,15 @@ export async function getDutyAreas(
       )
     )
     .limit(1);
-  const member = await db
-    .select({ id: rinkTeamMembers.id })
+  const memberAreas = await db
+    .select({ area: rinkTeams.area })
     .from(rinkTeamMembers)
-    .where(eq(rinkTeamMembers.userId, userId))
-    .limit(1);
+    .innerJoin(rinkTeams, eq(rinkTeams.id, rinkTeamMembers.teamId))
+    .where(eq(rinkTeamMembers.userId, userId));
+  const inTeam = (a: "hockeyrink" | "skidspar") => memberAreas.some((m) => m.area === a);
   return {
-    hockeyrink: rink.length > 0 || member.length > 0,
-    skidspar: track.length > 0,
+    hockeyrink: rink.length > 0 || inTeam("hockeyrink"),
+    skidspar: track.length > 0 || inTeam("skidspar"),
   };
 }
 
@@ -1058,10 +1059,7 @@ export async function listFunctionaryUserIds(
       if (r.a) ids.add(r.a);
       if (r.b) ids.add(r.b);
     });
-    const members = await db
-      .select({ u: rinkTeamMembers.userId })
-      .from(rinkTeamMembers);
-    members.forEach((m) => m.u && ids.add(m.u));
+
   } else {
     const rows = await db
       .select({ a: skiDutySchedule.sparjourUserId })
@@ -1069,23 +1067,43 @@ export async function listFunctionaryUserIds(
       .where(gte(skiDutySchedule.year, minYear));
     rows.forEach((r) => r.a && ids.add(r.a));
   }
+  const members = await db
+    .select({ u: rinkTeamMembers.userId })
+    .from(rinkTeamMembers)
+    .innerJoin(rinkTeams, eq(rinkTeams.id, rinkTeamMembers.teamId))
+    .where(eq(rinkTeams.area, area));
+  members.forEach((m) => m.u && ids.add(m.u));
   (await listAdmins()).forEach((a) => ids.add(a.id));
   return Array.from(ids);
 }
 
 /* --------------------------- Rinkjour teams --------------------------- */
 
-export async function listRinkTeams() {
+export type DutyArea = "hockeyrink" | "skidspar";
+
+export async function listRinkTeams(area?: DutyArea) {
   const db = await requireDb();
-  const teams = await db.select().from(rinkTeams).orderBy(rinkTeams.sortOrder, rinkTeams.id);
+  const teams = await db
+    .select()
+    .from(rinkTeams)
+    .where(area ? eq(rinkTeams.area, area) : undefined)
+    .orderBy(rinkTeams.sortOrder, rinkTeams.id);
   const members = await db.select().from(rinkTeamMembers).orderBy(rinkTeamMembers.id);
   return teams.map((t) => ({ ...t, members: members.filter((m) => m.teamId === t.id) }));
 }
 
-export async function createRinkTeam(name: string) {
+export async function getRinkTeam(id: number) {
   const db = await requireDb();
-  const count = (await db.select({ id: rinkTeams.id }).from(rinkTeams)).length;
-  const r = await db.insert(rinkTeams).values({ name, sortOrder: count }).$returningId();
+  const rows = await db.select().from(rinkTeams).where(eq(rinkTeams.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function createRinkTeam(name: string, area: DutyArea) {
+  const db = await requireDb();
+  const count = (
+    await db.select({ id: rinkTeams.id }).from(rinkTeams).where(eq(rinkTeams.area, area))
+  ).length;
+  const r = await db.insert(rinkTeams).values({ name, area, sortOrder: count }).$returningId();
   return r[0].id;
 }
 
@@ -1105,6 +1123,7 @@ export async function deleteRinkTeam(id: number) {
   }
   await db.delete(rinkTeamMembers).where(eq(rinkTeamMembers.teamId, id));
   await db.update(dutySchedule).set({ teamId: null }).where(eq(dutySchedule.teamId, id));
+  await db.update(skiDutySchedule).set({ teamId: null }).where(eq(skiDutySchedule.teamId, id));
   await db.delete(rinkTeams).where(eq(rinkTeams.id, id));
 }
 
@@ -1162,4 +1181,9 @@ export async function setAbsence(
   if (absent) {
     await db.insert(dutyAbsences).values({ year, week, memberId, message });
   }
+}
+
+/** The week's duty row for an area (rink or ski track). */
+export async function getAreaDuty(area: DutyArea, year: number, week: number) {
+  return area === "hockeyrink" ? getDuty(year, week) : getSkiDuty(year, week);
 }

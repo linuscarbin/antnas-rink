@@ -23,7 +23,6 @@ import AdminContacts from "./admin/AdminContacts";
 import AdminDuty from "./admin/AdminDuty";
 import AdminGuides from "./admin/AdminGuides";
 import AdminSettings from "./admin/AdminSettings";
-import AdminSkiDuty from "./admin/AdminSkiDuty";
 import AdminUsers from "./admin/AdminUsers";
 
 const TABS = [
@@ -117,8 +116,8 @@ export default function Admin() {
         </div>
 
         <div className="mt-6">
-          {tab === "duty" && <AdminDuty />}
-          {tab === "skiduty" && <AdminSkiDuty />}
+          {tab === "duty" && <AdminDuty key="hockeyrink" area="hockeyrink" />}
+          {tab === "skiduty" && <AdminDuty key="skidspar" area="skidspar" />}
           {tab === "guides" && <AdminGuides />}
           {tab === "bingo" && <AdminBingo />}
           {tab === "docs" && <AdminDocs />}

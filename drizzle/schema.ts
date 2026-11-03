@@ -130,6 +130,8 @@ export const skiDutySchedule = mysqlTable("skiDutySchedule", {
   sparjourPhone: varchar("sparjourPhone", { length: 40 }),
   sparjourUserId: int("sparjourUserId"),
   sparjourConflict: boolean("sparjourConflict").default(false).notNull(),
+  /** Spårjour team assigned to this week. */
+  teamId: int("teamId"),
   note: text("note"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -443,9 +445,13 @@ export const pushSubscriptions = mysqlTable("pushSubscriptions", {
 export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
 
-/** Rinkjour teams (e.g. "Lag 1"–"Lag 5"), rotating week by week. */
+/**
+ * Duty teams ("jourlag") rotating week by week — for the rink (rinkjour) or
+ * the ski track (spårjour). Table name kept from when only the rink had teams.
+ */
 export const rinkTeams = mysqlTable("rinkTeams", {
   id: int("id").autoincrement().primaryKey(),
+  area: mysqlEnum("area", ["hockeyrink", "skidspar"]).default("hockeyrink").notNull(),
   name: varchar("name", { length: 80 }).notNull(),
   sortOrder: int("sortOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

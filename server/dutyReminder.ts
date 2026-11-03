@@ -58,7 +58,14 @@ export async function sendWeeklyDutyReminders(now = new Date()) {
 
   // Ski-track duty (spårjour) — independent of rink duty.
   const skiDuty = await db.getSkiDuty(year, week);
-  if (skiDuty) {
+  if (skiDuty?.teamId) {
+    const absent = new Set(
+      (await db.listAbsences(year)).filter((a) => a.week === week).map((a) => a.memberId)
+    );
+    for (const m of await db.listTeamMembers(skiDuty.teamId)) {
+      if (!absent.has(m.id)) await addRecipient(m.userId, "Spårjour", m.name, "skidspår", skiDuty.note);
+    }
+  } else if (skiDuty) {
     await addRecipient(
       skiDuty.sparjourUserId,
       "Spårjour",

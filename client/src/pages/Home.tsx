@@ -6,10 +6,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
-import { getIsoWeek } from "@shared/rink";
 import CheckinWidget from "@/components/CheckinWidget";
 import VerdictCard from "@/components/VerdictCard";
 import PhotoPicker from "@/components/PhotoPicker";
+import { ThisWeekDuty } from "@/components/DutyWeeks";
 import { rinkVerdict, trackVerdict } from "@shared/verdict";
 import { Input } from "@/components/ui/input";
 import {
@@ -176,18 +176,6 @@ export default function Home() {
   const weatherQuery = trpc.weather.current.useQuery(undefined, {
     refetchInterval: 10 * 60 * 1000,
   });
-  const [now] = useState(() => new Date());
-  const { year, week } = getIsoWeek(now);
-  const dutyQuery = trpc.duty.list.useQuery({ year });
-  const thisWeekDuty = dutyQuery.data?.find((d) => d.week === week);
-  const teamsQuery = trpc.rinkTeams.list.useQuery();
-  const absencesQuery = trpc.rinkTeams.absences.useQuery({ year });
-  const thisWeekTeam = thisWeekDuty?.teamId
-    ? teamsQuery.data?.find((t) => t.id === thisWeekDuty.teamId)
-    : undefined;
-  const absentIds = new Set(
-    (absencesQuery.data ?? []).filter((a) => a.week === week).map((a) => a.memberId)
-  );
 
   const leaderboardQuery = trpc.status.leaderboard.useQuery();
   const invalidateAll = () => {
@@ -473,48 +461,8 @@ export default function Home() {
           </Link>
 
           {/* This week's duty */}
-          <div className="iso-card p-6">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                Vecka {week} · Rinkjour
-              </div>
-              <Link href="/schema" className="text-sm font-semibold text-primary">
-                Hela schemat
-              </Link>
-            </div>
-            {dutyQuery.isLoading ? (
-              <Skeleton className="mt-3 h-20" />
-            ) : thisWeekTeam ? (
-              <div className="mt-3">
-                <div className="font-extrabold">{thisWeekTeam.name}</div>
-                <ul className="mt-2 space-y-1.5">
-                  {thisWeekTeam.members.map((m) => (
-                    <DutyRow
-                      key={m.id}
-                      name={m.name}
-                      phone={m.phone}
-                      conflict={absentIds.has(m.id)}
-                    />
-                  ))}
-                </ul>
-              </div>
-            ) : thisWeekDuty && (thisWeekDuty.plogjourName || thisWeekDuty.spoljourName) ? (
-              <ul className="mt-3 space-y-1.5">
-                {thisWeekDuty.plogjourName && (
-                  <DutyRow name={thisWeekDuty.plogjourName} phone={thisWeekDuty.plogjourPhone} conflict={thisWeekDuty.plogjourConflict} />
-                )}
-                {thisWeekDuty.spoljourName && (
-                  <DutyRow name={thisWeekDuty.spoljourName} phone={thisWeekDuty.spoljourPhone} conflict={thisWeekDuty.spoljourConflict} />
-                )}
-              </ul>
-            ) : (
-              <p className="mt-2 text-sm text-muted-foreground">
-                Ingen jour inlagd för denna vecka ännu.
-              </p>
-            )}
-          </div>
+          <ThisWeekDuty area="hockeyrink" />
 
-          {/* Effort leaderboard */}
           <Leaderboard
             title="Insatser i säsong"
             subtitle="Plogning & spolning"
@@ -573,35 +521,5 @@ export function Leaderboard({
         </p>
       )}
     </div>
-  );
-}
-
-function DutyRow({
-  name,
-  phone,
-  conflict,
-}: {
-  name: string | null;
-  phone: string | null;
-  conflict: boolean;
-}) {
-  return (
-    <li className="flex items-center justify-between gap-2 text-sm">
-      <span className="flex items-center gap-2">
-        <span className={`font-semibold ${conflict ? "line-through text-muted-foreground" : ""}`}>
-          {name || "—"}
-        </span>
-        {conflict && (
-          <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-bold text-destructive">
-            Förhinder
-          </span>
-        )}
-      </span>
-      {phone && (
-        <a href={`tel:${phone}`} className="inline-flex items-center gap-1 font-semibold text-primary">
-          <Phone className="h-3.5 w-3.5" /> {phone}
-        </a>
-      )}
-    </li>
   );
 }

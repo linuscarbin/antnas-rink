@@ -17,40 +17,91 @@ import { toast } from "sonner";
 
 const WEEKS = Array.from({ length: 53 }, (_, i) => i + 1);
 
-export default function AdminDuty() {
+type Area = "hockeyrink" | "skidspar";
+
+const TEXT: Record<Area, { jour: string; intro: string; example: string }> = {
+  hockeyrink: {
+    jour: "rinkjour",
+    intro: "Varje lag har rinkjour en vecka i taget och plogar/spolar efter behov.",
+    example: "Lag",
+  },
+  skidspar: {
+    jour: "spårjour",
+    intro: "Varje lag har spårjour en vecka i taget och drar spåret efter behov.",
+    example: "Spårlag",
+  },
+};
+
+type WeekRow = {
+  id: number;
+  year: number;
+  week: number;
+  teamId: number | null;
+  note: string | null;
+  legacy: string[];
+};
+
+/** Admin tab for duty teams + weekly schedule (rinkjour or spårjour). */
+export default function AdminDuty({ area = "hockeyrink" }: { area?: Area }) {
   const utils = trpc.useUtils();
+  const text = TEXT[area];
   const [now] = useState(() => new Date());
   const current = getIsoWeek(now);
   const [year, setYear] = useState(current.year);
-  const dutyQuery = trpc.duty.list.useQuery({ year });
-  const teamsQuery = trpc.rinkTeams.list.useQuery();
-  const absencesQuery = trpc.rinkTeams.absences.useQuery({ year });
+  const rinkQuery = trpc.duty.list.useQuery({ year }, { enabled: area === "hockeyrink" });
+  const skiQuery = trpc.skiDuty.list.useQuery({ year }, { enabled: area === "skidspar" });
+  const dutyQuery = area === "hockeyrink" ? rinkQuery : skiQuery;
+  const rows: WeekRow[] =
+    area === "hockeyrink"
+      ? (rinkQuery.data ?? []).map((d) => ({
+          id: d.id,
+          year: d.year,
+          week: d.week,
+          teamId: d.teamId,
+          note: d.note,
+          legacy: [d.plogjourName, d.spoljourName].filter(Boolean) as string[],
+        }))
+      : (skiQuery.data ?? []).map((d) => ({
+          id: d.id,
+          year: d.year,
+          week: d.week,
+          teamId: d.teamId,
+          note: d.note,
+          legacy: d.sparjourName ? [d.sparjourName] : [],
+        }));
+  const teamsQuery = trpc.dutyTeams.list.useQuery({ area });
+  const absencesQuery = trpc.dutyTeams.absences.useQuery({ year, area });
   const membersQuery = trpc.users.listForAssignment.useQuery();
   const teams = teamsQuery.data ?? [];
   const users = membersQuery.data ?? [];
 
   const refresh = () => {
-    utils.rinkTeams.list.invalidate();
+    utils.dutyTeams.list.invalidate();
     utils.duty.list.invalidate();
-    utils.rinkTeams.absences.invalidate();
+    utils.skiDuty.list.invalidate();
+    utils.dutyTeams.absences.invalidate();
     utils.auth.me.invalidate();
   };
   const onError = (e: { message: string }) => toast.error(e.message);
+  const rotated = (r: { weeks: number }) => {
+    refresh();
+    toast.success(`${r.weeks} veckor fördelade.`);
+  };
 
-  const createTeam = trpc.rinkTeams.create.useMutation({ onSuccess: refresh, onError });
-  const renameTeam = trpc.rinkTeams.rename.useMutation({ onSuccess: refresh, onError });
-  const deleteTeam = trpc.rinkTeams.delete.useMutation({ onSuccess: refresh, onError });
-  const addMember = trpc.rinkTeams.addMember.useMutation({ onSuccess: refresh, onError });
-  const removeMember = trpc.rinkTeams.removeMember.useMutation({ onSuccess: refresh, onError });
-  const upsert = trpc.duty.upsert.useMutation({ onSuccess: refresh, onError });
-  const del = trpc.duty.delete.useMutation({ onSuccess: refresh, onError });
-  const rotate = trpc.duty.rotate.useMutation({
-    onSuccess: (r) => {
-      refresh();
-      toast.success(`${r.weeks} veckor fördelade.`);
-    },
-    onError,
-  });
+  const createTeam = trpc.dutyTeams.create.useMutation({ onSuccess: refresh, onError });
+  const renameTeam = trpc.dutyTeams.rename.useMutation({ onSuccess: refresh, onError });
+  const deleteTeam = trpc.dutyTeams.delete.useMutation({ onSuccess: refresh, onError });
+  const addMember = trpc.dutyTeams.addMember.useMutation({ onSuccess: refresh, onError });
+  const removeMember = trpc.dutyTeams.removeMember.useMutation({ onSuccess: refresh, onError });
+  const upsertRink = trpc.duty.upsert.useMutation({ onSuccess: refresh, onError });
+  const upsertSki = trpc.skiDuty.upsert.useMutation({ onSuccess: refresh, onError });
+  const delRink = trpc.duty.delete.useMutation({ onSuccess: refresh, onError });
+  const delSki = trpc.skiDuty.delete.useMutation({ onSuccess: refresh, onError });
+  const rotateRink = trpc.duty.rotate.useMutation({ onSuccess: rotated, onError });
+  const rotateSki = trpc.skiDuty.rotate.useMutation({ onSuccess: rotated, onError });
+  const upsert = area === "hockeyrink" ? upsertRink : upsertSki;
+  const del = area === "hockeyrink" ? delRink : delSki;
+  const rotate = area === "hockeyrink" ? rotateRink : rotateSki;
 
   // --- Rotation form (default: rest of this winter season → v12) ---
   const defaultToYear = current.week > 30 ? current.year + 1 : current.year;
@@ -77,8 +128,7 @@ export default function AdminDuty() {
           <Users className="h-5 w-5 text-primary" /> Jourlag
         </h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Varje lag har rinkjour en vecka i taget och plogar/spolar efter behov.
-          Koppla medlemmar till sina konton så får de markera status, se guider
+          {text.intro} Koppla medlemmar till sina konton så får de markera status, se guider
           och få påminnelser.
         </p>
 
@@ -86,12 +136,12 @@ export default function AdminDuty() {
           <Input
             value={newTeam}
             onChange={(e) => setNewTeam(e.target.value)}
-            placeholder={`T.ex. Lag ${teams.length + 1}`}
+            placeholder={`T.ex. ${text.example} ${teams.length + 1}`}
           />
           <Button
             className="gap-1"
             disabled={!newTeam.trim() || createTeam.isPending}
-            onClick={() => createTeam.mutate({ name: newTeam.trim() }, { onSuccess: () => setNewTeam("") })}
+            onClick={() => createTeam.mutate({ name: newTeam.trim(), area }, { onSuccess: () => setNewTeam("") })}
           >
             <Plus className="h-4 w-4" /> Lag
           </Button>
@@ -101,7 +151,9 @@ export default function AdminDuty() {
           {teamsQuery.isLoading ? (
             <Skeleton className="h-24 rounded-xl" />
           ) : teams.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Inga lag ännu. Skapa t.ex. Lag 1–5.</p>
+            <p className="text-sm text-muted-foreground">
+              Inga lag ännu. Skapa t.ex. {text.example} 1–{area === "hockeyrink" ? 5 : 2}.
+            </p>
           ) : (
             teams.map((t) => (
               <TeamCard
@@ -171,7 +223,9 @@ export default function AdminDuty() {
         {/* Week list */}
         <div className="iso-card p-6">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-extrabold text-lg">Schema {year}</h3>
+            <h3 className="font-extrabold text-lg">
+              {area === "hockeyrink" ? "Rinkjour" : "Spårjour"} {year}
+            </h3>
             <div className="flex items-center gap-1">
               <Button variant="outline" size="sm" className="bg-card" onClick={() => setYear((y) => y - 1)}>
                 {year - 1}
@@ -184,11 +238,11 @@ export default function AdminDuty() {
           <div className="mt-3 divide-y divide-border">
             {dutyQuery.isLoading ? (
               <Skeleton className="h-24" />
-            ) : (dutyQuery.data ?? []).length === 0 ? (
+            ) : rows.length === 0 ? (
               <p className="py-4 text-sm text-muted-foreground">Inget schema för {year} ännu.</p>
             ) : (
-              (dutyQuery.data ?? []).map((d) => {
-                const legacy = !d.teamId && (d.plogjourName || d.spoljourName);
+              rows.map((d) => {
+                const legacy = !d.teamId && d.legacy.length > 0;
                 return (
                   <div key={d.id} className="flex items-center gap-3 py-2">
                     <span
@@ -223,7 +277,7 @@ export default function AdminDuty() {
                       </Select>
                       {legacy && (
                         <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                          {[d.plogjourName, d.spoljourName].filter(Boolean).join(", ")}
+                          {d.legacy.join(", ")}
                         </div>
                       )}
                     </div>
