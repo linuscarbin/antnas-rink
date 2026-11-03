@@ -17,8 +17,10 @@ import { trpc } from "@/lib/trpc";
 import { getIsoWeek } from "@shared/rink";
 import { AlertTriangle, Phone, Snowflake, Trees, Undo2 } from "lucide-react";
 import { Leaderboard } from "./Home";
-import RefuelSection from "@/components/RefuelSection";
-import ExpenseSection from "@/components/ExpenseSection";
+import CheckinWidget from "@/components/CheckinWidget";
+import VerdictCard from "@/components/VerdictCard";
+import PhotoPicker from "@/components/PhotoPicker";
+import { trackVerdict } from "@shared/verdict";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -33,7 +35,7 @@ const CONDITION_COLOR: Record<string, string> = {
 };
 
 export default function Skidspar() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isTrackFunctionary } = useAuth();
   const utils = trpc.useUtils();
   const statusQuery = trpc.track.get.useQuery();
   const [now] = useState(() => new Date());
@@ -42,6 +44,7 @@ export default function Skidspar() {
   const dutyQuery = trpc.skiDuty.list.useQuery({ year });
 
   const [helpers, setHelpers] = useState("");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const leaderboardQuery = trpc.track.leaderboard.useQuery();
   const invalidateTrack = () => {
     utils.track.get.invalidate();
@@ -51,6 +54,7 @@ export default function Skidspar() {
     onSuccess: () => {
       invalidateTrack();
       setHelpers("");
+      setPhotoUrl(null);
       toast.success("Status uppdaterad: draget");
     },
     onError: (e) => toast.error(e.message),
@@ -101,6 +105,30 @@ export default function Skidspar() {
               Se när längdspåret senast drogs, aktuellt spårskick och vem som har
               spårjour.
             </p>
+          </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 max-w-4xl">
+            <VerdictCard
+              label="Skidspåret"
+              loading={statusQuery.isLoading}
+              verdict={
+                statusQuery.isLoading
+                  ? null
+                  : trackVerdict({
+                      condition: status?.condition,
+                      dragetAt: status?.dragetAt,
+                    })
+              }
+              meta={status?.dragetAt ? `Draget ${timeAgo(status.dragetAt)}` : undefined}
+              photo={
+                status?.photoUrl
+                  ? {
+                      url: status.photoUrl,
+                      caption: `Foto ${timeAgo(status.photoAt)}${status.photoBy ? ` · ${status.photoBy}` : ""}`,
+                    }
+                  : null
+              }
+            />
+            <CheckinWidget area="skidspar" />
           </div>
         </div>
       </section>
@@ -173,7 +201,7 @@ export default function Skidspar() {
                     <>Ingen registrering ännu.</>
                   )}
                 </div>
-                {isAuthenticated && (
+                {isTrackFunctionary && (
                   <div className="flex flex-col gap-2">
                     <Input
                       value={helpers}
@@ -181,9 +209,12 @@ export default function Skidspar() {
                       placeholder="Medhjälpare (valfritt, komma-separera)"
                       className="bg-card text-sm"
                     />
+                    <PhotoPicker value={photoUrl} onChange={setPhotoUrl} />
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => markDraget.mutate({ helpers })}
+                        onClick={() =>
+                          markDraget.mutate({ helpers, photoUrl: photoUrl ?? undefined })
+                        }
                         disabled={markDraget.isPending}
                         variant="outline"
                         className="bg-card font-semibold flex-1"
@@ -228,7 +259,7 @@ export default function Skidspar() {
                     </span>
                   </div>
                 </div>
-                {isAuthenticated ? (
+                {isTrackFunctionary ? (
                   <Select
                     value={status?.condition ?? undefined}
                     onValueChange={(v) =>
@@ -248,7 +279,7 @@ export default function Skidspar() {
                   </Select>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Inloggade kan uppdatera spårskick.
+                    Spårskicket uppdateras av de som har spårjour.
                   </p>
                 )}
               </div>
@@ -261,7 +292,7 @@ export default function Skidspar() {
 
               {!isAuthenticated && (
                 <div className="sm:col-span-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4 text-sm text-muted-foreground">
-                  Logga in för att uppdatera spårstatus.{" "}
+                  Har du spårjour? Logga in för att uppdatera spårstatus.{" "}
                   <button
                     className="font-semibold text-primary underline"
                     onClick={() => (window.location.href = getLoginUrl())}
@@ -326,8 +357,6 @@ export default function Skidspar() {
         </div>
       </div>
 
-      <RefuelSection area="skidspar" />
-      <ExpenseSection area="skidspar" />
 
       {/* Ski duty schedule */}
       <div className="container pb-12">

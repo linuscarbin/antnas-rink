@@ -1,11 +1,28 @@
 import { z } from "zod";
 import * as db from "../db";
-import { adminProcedure, publicProcedure, router } from "../_core/trpc";
+import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { assertFunctionary } from "../_core/functionary";
 
 const SEASON_KEY = "active_season";
 const BINGO_INFO_KEY = "bilbingo_info";
+const RINK_CLOSED_KEY = "rink_closed";
 
 export const settingsRouter = router({
+  // Public: manual "rink closed" message (empty = open as normal).
+  getRinkClosed: publicProcedure.query(async () => {
+    const row = await db.getSetting(RINK_CLOSED_KEY);
+    return { message: row?.settingValue ?? "" } as const;
+  }),
+
+  // Rink functionaries: close the rink with a message, or reopen (empty).
+  setRinkClosed: protectedProcedure
+    .input(z.object({ message: z.string().trim().max(200) }))
+    .mutation(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, "hockeyrink");
+      await db.setSetting(RINK_CLOSED_KEY, input.message || null);
+      return { message: input.message } as const;
+    }),
+
   // Public: read the active season (defaults to "vinter").
   getSeason: publicProcedure.query(async () => {
     const row = await db.getSetting(SEASON_KEY);

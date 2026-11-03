@@ -7,6 +7,7 @@ import {
   publicProcedure,
   router,
 } from "../_core/trpc";
+import { assertFunctionary } from "../_core/functionary";
 
 const AREAS = ["hockeyrink", "skidspar"] as const;
 
@@ -16,13 +17,17 @@ function seasonStart(now = new Date()): Date {
 }
 
 export const expensesRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ area: z.enum(AREAS) }))
-    .query(async ({ input }) => db.listExpenses(input.area)),
+    .query(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, input.area);
+      return db.listExpenses(input.area);
+    }),
 
-  summary: publicProcedure
+  summary: protectedProcedure
     .input(z.object({ area: z.enum(AREAS), allTime: z.boolean().default(false) }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, input.area);
       const rows = await db.listExpenses(input.area);
       const since = input.allTime ? null : seasonStart();
       const filtered = since
@@ -54,6 +59,7 @@ export const expensesRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, input.area);
       const receiptUrl =
         input.receiptUrl && /^https?:\/\/|^\/uploads\//.test(input.receiptUrl)
           ? input.receiptUrl

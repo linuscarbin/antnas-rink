@@ -112,10 +112,18 @@ JWT_SECRET=$(openssl rand -hex 32) docker compose up --build
 
 ## Behörigheter
 
-- **Besökare:** ser status, schema, kontakter, bokningar och anslagstavla.
-- **Inloggad användare:** uppdaterar status, bokar, chattar, anmäler förhinder.
-- **Admin:** allt ovan + hanterar scheman, kontakter, användare och bokningar via
-  `/admin`. Gör en användare till admin under *Användare* i adminpanelen.
+- **Besökare:** ser om rinken/spåret är åkbart, foton, schema, kontakter,
+  bokningar, anslagstavla och *Regler & info*. Kan checka in med
+  "Jag är på rinken nu" utan konto.
+- **Inloggad användare:** bokar, skriver på anslagstavlan, anmäler förhinder.
+- **Funktionär (jourhavare):** alla som admin kopplat som medlem på
+  plog-/spoljour (rinken) eller spårjour (skidspåret) i år eller förra året.
+  Markerar plogad/spolad/draget med foto, stänger rinken tillfälligt, ser
+  *Funktionär*-sidan med guider (t.ex. förrådskod) samt tankning, kvitton och
+  utlägg för sitt område. Behörigheten kontrolleras på servern.
+- **Admin:** allt ovan för båda områdena + hanterar scheman, guider, kontakter,
+  användare och bokningar via `/admin`. Gör en användare till admin under
+  *Användare* i adminpanelen.
 
 ## Tester
 

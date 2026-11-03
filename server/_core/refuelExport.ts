@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { authenticateRequest } from "./auth";
 import { getUploadDir } from "./uploads";
+import { isFunctionaryFor } from "./functionary";
 import * as db from "../db";
 
 /**
@@ -23,6 +24,15 @@ async function loadReceipt(receiptUrl: string): Promise<Buffer | null> {
   const resp = await fetch(receiptUrl);
   if (!resp.ok) return null;
   return Buffer.from(await resp.arrayBuffer());
+}
+
+/** Admin may export everything; functionaries only their own area. */
+async function canExport(
+  user: { id: number; role: "user" | "admin" },
+  area: "hockeyrink" | "skidspar" | null
+): Promise<boolean> {
+  if (user.role === "admin") return true;
+  return area ? isFunctionaryFor(user, area) : false;
 }
 
 const AREAS = ["hockeyrink", "skidspar"] as const;
@@ -78,6 +88,9 @@ export function registerRefuelExport(app: Express) {
       const user = await authenticateRequest(req);
       if (!user) return res.status(401).json({ error: "Inloggning krävs." });
       const area = parseArea(req);
+      if (!(await canExport(user, area))) {
+        return res.status(403).json({ error: "Behörighet saknas." });
+      }
       const { from, to } = parsePeriod(req);
       const rows = (await db.listRefuelings(area ?? undefined)).filter((r) =>
         inPeriod(new Date(r.purchasedAt), from, to)
@@ -136,6 +149,9 @@ export function registerRefuelExport(app: Express) {
       const user = await authenticateRequest(req);
       if (!user) return res.status(401).json({ error: "Inloggning krävs." });
       const area = parseArea(req);
+      if (!(await canExport(user, area))) {
+        return res.status(403).json({ error: "Behörighet saknas." });
+      }
       const { from, to } = parsePeriod(req);
       const rows = (await db.listRefuelings(area ?? undefined)).filter(
         (r) => r.receiptUrl && inPeriod(new Date(r.purchasedAt), from, to)
@@ -192,6 +208,9 @@ export function registerRefuelExport(app: Express) {
       const user = await authenticateRequest(req);
       if (!user) return res.status(401).json({ error: "Inloggning krävs." });
       const area = parseArea(req);
+      if (!(await canExport(user, area))) {
+        return res.status(403).json({ error: "Behörighet saknas." });
+      }
       const { from, to } = parsePeriod(req);
       const rows = (await db.listExpenses(area ?? undefined)).filter((r) =>
         inPeriod(new Date(r.purchasedAt), from, to)
@@ -244,6 +263,9 @@ export function registerRefuelExport(app: Express) {
       const user = await authenticateRequest(req);
       if (!user) return res.status(401).json({ error: "Inloggning krävs." });
       const area = parseArea(req);
+      if (!(await canExport(user, area))) {
+        return res.status(403).json({ error: "Behörighet saknas." });
+      }
       const { from, to } = parsePeriod(req);
       const rows = (await db.listExpenses(area ?? undefined)).filter(
         (r) => r.receiptUrl && inPeriod(new Date(r.purchasedAt), from, to)

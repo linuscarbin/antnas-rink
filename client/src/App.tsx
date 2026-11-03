@@ -13,6 +13,8 @@ import Login from "./pages/Login";
 import Profil from "./pages/Profil";
 import Bilbingo from "./pages/Bilbingo";
 import Dokument from "./pages/Dokument";
+import Funktionar from "./pages/Funktionar";
+import Info from "./pages/Info";
 import LagFamiljer from "./pages/LagFamiljer";
 import Schema from "./pages/Schema";
 import Skidspar from "./pages/Skidspar";
@@ -41,6 +43,8 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/profil" component={Profil} />
       <Route path="/admin" component={Admin} />
+      <Route path="/funktionar" component={Funktionar} />
+      <Route path="/info" component={Info} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

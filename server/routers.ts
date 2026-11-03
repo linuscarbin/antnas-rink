@@ -3,10 +3,12 @@ import { router } from "./_core/trpc";
 import { authRouter } from "./routers/auth";
 import { bookingsRouter } from "./routers/bookings";
 import { chatRouter } from "./routers/chat";
+import { checkinsRouter } from "./routers/checkins";
 import { contactsRouter } from "./routers/contacts";
 import { bingoRouter } from "./routers/bingo";
 import { documentsRouter } from "./routers/documents";
 import { dutyRouter } from "./routers/duty";
+import { guidesRouter } from "./routers/guides";
 import { expensesRouter } from "./routers/expenses";
 import { refuelingsRouter } from "./routers/refuelings";
 import { scheduleRouter } from "./routers/schedule";
@@ -22,9 +24,11 @@ export const appRouter = router({
   auth: authRouter,
   status: statusRouter,
   duty: dutyRouter,
+  guides: guidesRouter,
   contacts: contactsRouter,
   bookings: bookingsRouter,
   chat: chatRouter,
+  checkins: checkinsRouter,
   users: usersRouter,
   weather: weatherRouter,
   schedule: scheduleRouter,

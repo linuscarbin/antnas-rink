@@ -78,6 +78,27 @@
       "when": 1782760839852,
       "tag": "0010_faulty_franklin_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1793710223444,
+      "tag": "0011_silky_phil_sheldon",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1793710541812,
+      "tag": "0012_misty_miracleman",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1793710618784,
+      "tag": "0013_tricky_thunderbolt",
+      "breakpoints": true
     }
   ]
 }

@@ -7,8 +7,10 @@ import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
 import { getIsoWeek } from "@shared/rink";
-import RefuelSection from "@/components/RefuelSection";
-import ExpenseSection from "@/components/ExpenseSection";
+import CheckinWidget from "@/components/CheckinWidget";
+import VerdictCard from "@/components/VerdictCard";
+import PhotoPicker from "@/components/PhotoPicker";
+import { rinkVerdict, trackVerdict } from "@shared/verdict";
 import { Input } from "@/components/ui/input";
 import {
   CheckCircle2,
@@ -42,11 +44,12 @@ function StatusCard({
   doneBy: string | null;
   icon: React.ReactNode;
   canAct: boolean;
-  onMark: (helpers: string) => void;
+  onMark: (helpers: string, photoUrl: string | null) => void;
   onUndo: () => void;
   pending: boolean;
 }) {
   const [helpers, setHelpers] = useState("");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   // "Fresh" if done within last 24h.
   const fresh = doneAt
     ? Date.now() - new Date(doneAt).getTime() < 24 * 3600 * 1000
@@ -112,11 +115,13 @@ function StatusCard({
             placeholder="Medhjälpare (valfritt, komma-separera)"
             className="bg-card text-sm"
           />
+          <PhotoPicker value={photoUrl} onChange={setPhotoUrl} />
           <div className="flex gap-2">
             <Button
               onClick={() => {
-                onMark(helpers);
+                onMark(helpers, photoUrl);
                 setHelpers("");
+                setPhotoUrl(null);
               }}
               disabled={pending}
               variant="outline"
@@ -144,9 +149,29 @@ function StatusCard({
 }
 
 export default function Home() {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated, isRinkFunctionary } = useAuth();
   const utils = trpc.useUtils();
-  const statusQuery = trpc.status.get.useQuery();
+  const statusQuery = trpc.status.get.useQuery(undefined, {
+    refetchInterval: 2 * 60 * 1000,
+  });
+  const trackQuery = trpc.track.get.useQuery();
+  const closedQuery = trpc.settings.getRinkClosed.useQuery();
+  const setPhoto = trpc.status.setPhoto.useMutation({
+    onSuccess: () => {
+      utils.status.get.invalidate();
+      toast.success("Fotot är uppladdat.");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const [closeMsg, setCloseMsg] = useState("");
+  const setClosed = trpc.settings.setRinkClosed.useMutation({
+    onSuccess: (r) => {
+      utils.settings.getRinkClosed.invalidate();
+      setCloseMsg("");
+      toast.success(r.message ? "Rinken markerad som stängd." : "Rinken är öppen igen.");
+    },
+    onError: (e) => toast.error(e.message),
+  });
   const weatherQuery = trpc.weather.current.useQuery(undefined, {
     refetchInterval: 10 * 60 * 1000,
   });
@@ -184,24 +209,71 @@ export default function Home() {
 
   const temp = weatherQuery.data?.temperature;
   const goodForFlooding = typeof temp === "number" && temp <= -4;
+  const closedMessage = closedQuery.data?.message ?? "";
+
+  const rink = statusQuery.data;
+  const rinkV = statusQuery.isLoading
+    ? null
+    : rinkVerdict({
+        closedMessage,
+        plogadAt: rink?.plogadAt,
+        spoladAt: rink?.spoladAt,
+        temperature: weatherQuery.data?.ok ? temp : null,
+      });
+  const track = trackQuery.data;
+  const trackV = trackQuery.isLoading
+    ? null
+    : trackVerdict({ condition: track?.condition, dragetAt: track?.dragetAt });
+  const rinkMeta = [
+    rink?.plogadAt ? `Plogad ${timeAgo(rink.plogadAt)}` : null,
+    rink?.spoladAt ? `Spolad ${timeAgo(rink.spoladAt)}` : null,
+    typeof temp === "number" ? `${Math.round(temp)}° ute` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <SiteLayout>
-      {/* Hero */}
+      {/* Hero: the big answer */}
       <section className="relative overflow-hidden border-b border-border/60">
         <IsoDecor />
-        <div className="container relative py-12 sm:py-16">
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
-              <Snowflake className="h-3.5 w-3.5" /> Antnäs Vinter
-            </span>
-            <h1 className="mt-4 text-4xl sm:text-5xl font-extrabold leading-[1.05] tracking-tight">
-              Är isen <span className="text-primary">åkbar</span> ikväll?
-            </h1>
-            <p className="mt-3 text-lg text-muted-foreground">
-              Här ser du om rinken är plogad och spolad, vem som har jour och du
-              kan boka tid eller skriva på anslagstavlan.
-            </p>
+        <div className="container relative py-8 sm:py-12">
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
+            <Snowflake className="h-3.5 w-3.5" /> Antnäs Vinter
+          </span>
+          <h1 className="mt-3 text-3xl sm:text-5xl font-extrabold leading-[1.05] tracking-tight">
+            Är isen <span className="text-primary">åkbar</span> ikväll?
+          </h1>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
+            <VerdictCard
+              label="Hockeyrinken"
+              verdict={rinkV}
+              meta={rinkMeta || undefined}
+              photo={
+                rink?.photoUrl
+                  ? {
+                      url: rink.photoUrl,
+                      caption: `Foto ${timeAgo(rink.photoAt)}${rink.photoBy ? ` · ${rink.photoBy}` : ""}`,
+                    }
+                  : null
+              }
+            />
+            <VerdictCard
+              label="Skidspåret"
+              verdict={trackV}
+              href="/skidspar"
+              meta={
+                track?.dragetAt ? `Draget ${timeAgo(track.dragetAt)}` : undefined
+              }
+              photo={
+                track?.photoUrl
+                  ? { url: track.photoUrl, caption: `Foto ${timeAgo(track.photoAt)}` }
+                  : null
+              }
+            />
+            <div className="sm:col-span-2 lg:col-span-1">
+              <CheckinWidget area="hockeyrink" />
+            </div>
           </div>
         </div>
       </section>
@@ -222,8 +294,10 @@ export default function Home() {
                 doneAt={statusQuery.data?.plogadAt ?? null}
                 doneBy={statusQuery.data?.plogadBy ?? null}
                 icon={<CloudSnow className="h-6 w-6" />}
-                canAct={isAuthenticated}
-                onMark={(helpers) => markPlogad.mutate({ helpers })}
+                canAct={isRinkFunctionary}
+                onMark={(helpers, photoUrl) =>
+                  markPlogad.mutate({ helpers, photoUrl: photoUrl ?? undefined })
+                }
                 onUndo={() => undo.mutate({ kind: "plogad" })}
                 pending={markPlogad.isPending || undo.isPending}
               />
@@ -233,8 +307,10 @@ export default function Home() {
                 doneAt={statusQuery.data?.spoladAt ?? null}
                 doneBy={statusQuery.data?.spoladBy ?? null}
                 icon={<Droplets className="h-6 w-6" />}
-                canAct={isAuthenticated}
-                onMark={(helpers) => markSpolad.mutate({ helpers })}
+                canAct={isRinkFunctionary}
+                onMark={(helpers, photoUrl) =>
+                  markSpolad.mutate({ helpers, photoUrl: photoUrl ?? undefined })
+                }
                 onUndo={() => undo.mutate({ kind: "spolad" })}
                 pending={markSpolad.isPending || undo.isPending}
               />
@@ -247,10 +323,67 @@ export default function Home() {
             </div>
           )}
 
+          {isRinkFunctionary && (
+            <div className="sm:col-span-2 iso-card p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  Jourverktyg
+                </div>
+                <PhotoPicker
+                  value={null}
+                  label="Nytt foto på isen"
+                  onChange={(url) => url && setPhoto.mutate({ photoUrl: url })}
+                />
+              </div>
+              <div className="mt-3 text-xs font-semibold text-muted-foreground">
+                Stäng rinken tillfälligt
+              </div>
+              {closedMessage ? (
+                <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+                  <span>
+                    Stängd: <strong>{closedMessage}</strong>
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-card"
+                    disabled={setClosed.isPending}
+                    onClick={() => setClosed.mutate({ message: "" })}
+                  >
+                    Öppna igen
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-2 flex gap-2">
+                  <Input
+                    value={closeMsg}
+                    onChange={(e) => setCloseMsg(e.target.value)}
+                    placeholder="T.ex. Töväder – isen är blöt"
+                    className="bg-card text-sm"
+                  />
+                  <Button
+                    variant="outline"
+                    className="bg-card"
+                    disabled={!closeMsg.trim() || setClosed.isPending}
+                    onClick={() => setClosed.mutate({ message: closeMsg })}
+                  >
+                    Stäng
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isAuthenticated && !isRinkFunctionary && (
+            <div className="sm:col-span-2 rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+              Status uppdateras av de som har plog- och spoljour. Vill du
+              hjälpa till? Hör av dig till en admin så läggs du in i schemat.
+            </div>
+          )}
+
           {!isAuthenticated && (
             <div className="sm:col-span-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4 text-sm text-muted-foreground">
-              Logga in för att uppdatera status, boka och skriva på
-              anslagstavlan.{" "}
+              Logga in för att boka och skriva på anslagstavlan.{" "}
               <button
                 className="font-semibold text-primary underline"
                 onClick={() => (window.location.href = getLoginUrl())}
@@ -307,6 +440,16 @@ export default function Home() {
             )}
           </div>
 
+          <Link
+            href="/info"
+            className="iso-card block p-5 text-sm hover:border-primary/40"
+          >
+            <div className="font-bold">Regler &amp; info</div>
+            <div className="text-muted-foreground">
+              Ordningsregler, ställ bort målen, var snön ska ligga →
+            </div>
+          </Link>
+
           {/* This week's duty */}
           <div className="iso-card p-6">
             <div className="flex items-center justify-between">
@@ -341,9 +484,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* Ski track shortcut */}
-          <TrackCard />
-
           {/* Effort leaderboard */}
           <Leaderboard
             title="Insatser i säsong"
@@ -353,9 +493,6 @@ export default function Home() {
           />
         </div>
       </div>
-
-      <RefuelSection area="hockeyrink" />
-      <ExpenseSection area="hockeyrink" />
     </SiteLayout>
   );
 }
@@ -404,56 +541,6 @@ export function Leaderboard({
         <p className="mt-2 text-sm text-muted-foreground">
           Inga insatser registrerade ännu.
         </p>
-      )}
-    </div>
-  );
-}
-
-function TrackCard() {
-  const trackQuery = trpc.track.get.useQuery();
-  const t = trackQuery.data;
-  const dragetFresh = t?.dragetAt
-    ? Date.now() - new Date(t.dragetAt).getTime() < 48 * 3600 * 1000
-    : false;
-  return (
-    <div className="iso-card p-6">
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-          Skidspåret
-        </div>
-        <Link href="/skidspar" className="text-sm font-semibold text-primary">
-          Öppna
-        </Link>
-      </div>
-      {trackQuery.isLoading ? (
-        <Skeleton className="mt-3 h-16" />
-      ) : (
-        <div className="mt-3 space-y-2 text-sm">
-          <div className="flex items-center gap-2">
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{
-                background: dragetFresh
-                  ? "oklch(0.72 0.13 184)"
-                  : "oklch(0.75 0.16 75)",
-              }}
-            />
-            <span className="font-semibold">
-              {t?.dragetAt
-                ? dragetFresh
-                  ? "Draget nyligen"
-                  : "Kan behöva dras"
-                : "Ej draget"}
-            </span>
-            {t?.dragetAt && (
-              <span className="text-muted-foreground">{timeAgo(t.dragetAt)}</span>
-            )}
-          </div>
-          <div className="text-muted-foreground">
-            Spårskick:{" "}
-            <strong className="text-foreground">{t?.condition ?? "Ej bedömt"}</strong>
-          </div>
-        </div>
       )}
     </div>
   );

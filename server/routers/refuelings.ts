@@ -7,6 +7,7 @@ import {
   publicProcedure,
   router,
 } from "../_core/trpc";
+import { assertFunctionary } from "../_core/functionary";
 
 const AREAS = ["hockeyrink", "skidspar"] as const;
 
@@ -16,22 +17,24 @@ function seasonStart(now = new Date()): Date {
 }
 
 export const refuelingsRouter = router({
-  // Public: list refuelings for an area (auditable record).
-  list: publicProcedure
+  // Functionaries (on duty for the area) + admin: list refuelings for an area (auditable record).
+  list: protectedProcedure
     .input(z.object({ area: z.enum(AREAS) }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, input.area);
       return db.listRefuelings(input.area);
     }),
 
-  // Public: summary totals for an area (season or all time).
-  summary: publicProcedure
+  // Functionaries + admin: summary totals for an area (season or all time).
+  summary: protectedProcedure
     .input(
       z.object({
         area: z.enum(AREAS),
         allTime: z.boolean().default(false),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, input.area);
       const rows = await db.listRefuelings(input.area);
       const since = input.allTime ? null : seasonStart();
       const filtered = since
@@ -66,6 +69,7 @@ export const refuelingsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, input.area);
       const receiptUrl =
         input.receiptUrl && /^https?:\/\/|^\/uploads\//.test(input.receiptUrl)
           ? input.receiptUrl
