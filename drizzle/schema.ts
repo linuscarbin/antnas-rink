@@ -421,3 +421,22 @@ export const guides = mysqlTable("guides", {
 
 export type Guide = typeof guides.$inferSelect;
 export type InsertGuide = typeof guides.$inferInsert;
+
+/**
+ * Web Push subscriptions (one per browser/device). Anonymous subscriptions
+ * are allowed for public topics; duty topics require a linked functionary.
+ */
+export const pushSubscriptions = mysqlTable("pushSubscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  endpoint: varchar("endpoint", { length: 500 }).notNull().unique(),
+  p256dh: varchar("p256dh", { length: 200 }).notNull(),
+  auth: varchar("auth", { length: 100 }).notNull(),
+  userId: int("userId"),
+  /** Comma-wrapped topic list, e.g. ",rink_spolad,group,". */
+  topics: varchar("topics", { length: 300 }).notNull().default(""),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;

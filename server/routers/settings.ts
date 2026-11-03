@@ -3,6 +3,7 @@ import { z } from "zod";
 import * as db from "../db";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { assertFunctionary } from "../_core/functionary";
+import { notifyTopicLater } from "../push";
 
 const SEASON_KEY = "active_season";
 const BINGO_INFO_KEY = "bilbingo_info";
@@ -21,6 +22,13 @@ export const settingsRouter = router({
     .mutation(async ({ ctx, input }) => {
       await assertFunctionary(ctx.user, "hockeyrink");
       await db.setSetting(RINK_CLOSED_KEY, input.message || null);
+      if (input.message) {
+        notifyTopicLater(
+          "rink_closed",
+          { title: "Rinken är stängd 🔴", body: input.message, url: "/" },
+          { throttleMs: 30 * 60 * 1000 }
+        );
+      }
       return { message: input.message } as const;
     }),
 

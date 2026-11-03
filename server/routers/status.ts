@@ -2,6 +2,7 @@ import { z } from "zod";
 import * as db from "../db";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { assertFunctionary } from "../_core/functionary";
+import { notifyTopicLater } from "../push";
 
 /** Returns Date of the start of the current winter season (Jul 1 -> Jun 30). */
 function seasonStart(now = new Date()): Date {
@@ -52,6 +53,11 @@ export const statusRouter = router({
         byName: name,
         helpers: input.helpers?.trim() || null,
       });
+      notifyTopicLater(
+        "rink_spolad",
+        { title: "Rinken är nyspolad 🧊", body: `${name} har spolat isen. Ta med skridskorna!`, url: "/" },
+        { throttleMs: 3 * 3600 * 1000 }
+      );
       return db.updateRinkStatus({ spoladAt: new Date(), spoladBy: name,
         ...(input.photoUrl
           ? { photoUrl: input.photoUrl, photoAt: new Date(), photoBy: name }

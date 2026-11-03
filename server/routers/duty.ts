@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "../db";
 import { emailLayout, esc, sendEmail } from "../email";
+import { notifyConflict } from "../push";
 import {
   adminProcedure,
   protectedProcedure,
@@ -94,6 +95,7 @@ export const dutyRouter = router({
           <p>Logga in i adminpanelen för att hitta en ersättare.</p>
         `;
 
+        notifyConflict("hockeyrink", `${kindLabel} vecka ${updated.week}: ${reporter} har förhinder och behöver ersättare.`);
         await sendEmail({
           to: adminEmails,
           subject: `Förhinder anmält: ${kindLabel} vecka ${updated.week}`,

@@ -67,6 +67,10 @@ Det **första kontot som registreras blir automatiskt administratör** (ägare).
 | `R2_ENDPOINT` | Nej | Explicit S3-endpoint (annars härleds från account-id) |
 | `RUN_MIGRATIONS` | Nej | Kör DB-migreringar automatiskt vid start. Standard på; `false` = av |
 | `TZ` | Nej | Tidszon för cron-påminnelser. Docker-imagen sätter `Europe/Stockholm` |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Nej | Nycklar för push-notiser. Skapas automatiskt och sparas i databasen om de saknas |
+| `VAPID_SUBJECT` | Nej | Kontakt för pushtjänsterna, `mailto:` eller `https:`. Standard: `PUBLIC_BASE_URL` eller avsändaradressen |
+| `SNOW_ALERT_CRON` | Nej | När snövarningen körs (svensk tid). Standard `5 7 * * *`. Tomt = av |
+| `SNOW_ALERT_CM` | Nej | Gräns för snövarning i cm senaste dygnet. Standard `5` |
 | `UPLOAD_DIR` | Nej | Disk-fallback för bilder när R2 *inte* används. Standard `/data/uploads` |
 
 \* R2-bilder: ange alla `R2_*` (utom valfri endpoint) för att lagra bilder i Cloudflare R2. Utan dem används disk (`UPLOAD_DIR`).
@@ -109,6 +113,20 @@ Ett `docker-compose.yml` finns med app + MySQL för att prova hela stacken lokal
 ```bash
 JWT_SECRET=$(openssl rand -hex 32) docker compose up --build
 ```
+
+## App och notiser (PWA)
+
+Sajten är en installerbar webbapp med push-notiser – ingen App Store behövs.
+
+- **Installera:** Android/Chrome: menyn → *Installera app*. iPhone: Safari →
+  *Dela* → *Lägg till på hemskärmen* (notiser kräver iOS 16.4+ och att appen
+  öppnas från hemskärmen). Guide finns på `/notiser`.
+- **Notiser för alla (utan konto):** rinken nyspolad, spåret nydraget, ett gäng
+  på väg (3+ incheckade samtidigt), rinken stängd.
+- **Notiser för jourhavare:** jourpåminnelse, snövarning, förhinder i jouren.
+- Inga notiser 22–07. Samma sorts notis skickas högst en gång per 2–3 timmar.
+- Skickas direkt från servern via Web Push (VAPID) – ingen Firebase eller
+  extern tjänst behövs. HTTPS krävs (Coolify ordnar det).
 
 ## Behörigheter
 

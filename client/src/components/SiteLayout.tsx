@@ -12,6 +12,7 @@ import {
   type LucideIcon,
   FolderOpen,
   Info,
+  Bell,
   MessageSquare,
   Snowflake,
   Sun,
@@ -76,6 +77,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
     ...(isSummer || !FEATURES.bilbingo
       ? []
       : [{ href: "/bilbingo", label: "Bilbingo", icon: Ticket }]),
+    { href: "/notiser", label: "Notiser & app", icon: Bell },
     ...(isFunctionary
       ? [{ href: "/funktionar", label: "Funktionär", icon: ShieldCheck }]
       : []),
@@ -119,6 +121,11 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-2 shrink-0">
+            <Link href="/notiser" aria-label="Notiser">
+              <Button variant="ghost" size="icon" title="Notiser">
+                <Bell className="h-4 w-4" />
+              </Button>
+            </Link>
             {isFunctionary && (
               <Link href="/funktionar" className="hidden md:block">
                 <Button variant="outline" size="sm" className="bg-card gap-1.5">

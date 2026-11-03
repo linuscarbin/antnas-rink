@@ -2,6 +2,7 @@ import { z } from "zod";
 import * as db from "../db";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { assertFunctionary } from "../_core/functionary";
+import { notifyTopicLater } from "../push";
 
 const CONDITIONS = [
   "Mycket bra",
@@ -40,6 +41,11 @@ export const trackRouter = router({
         byName: name,
         helpers: input.helpers?.trim() || null,
       });
+      notifyTopicLater(
+        "track_draget",
+        { title: "Spåret är nydraget ⛷️", body: `${name} har dragit skidspåret.`, url: "/skidspar" },
+        { throttleMs: 3 * 3600 * 1000 }
+      );
       return db.updateTrackStatus({ dragetAt: new Date(), dragetBy: name,
         ...(input.photoUrl
           ? { photoUrl: input.photoUrl, photoAt: new Date(), photoBy: name }

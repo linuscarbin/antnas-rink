@@ -3,8 +3,13 @@ import { z } from "zod";
 import * as db from "../db";
 import { isFunctionaryFor } from "../_core/functionary";
 import { publicProcedure, router } from "../_core/trpc";
+import { groupSize } from "@shared/push";
+import { notifyTopicLater } from "../push";
 
 const AREAS = ["hockeyrink", "skidspar"] as const;
+
+/** Minimum group size that triggers a "gäng på väg" notification. */
+const GROUP_MIN = 3;
 
 /** How long a check-in stays visible after the arrival time. */
 const STAY_MS = 3 * 3600 * 1000;
@@ -77,6 +82,33 @@ export const checkinsRouter = router({
         ownerKey: input.ownerKey,
         userId: ctx.user?.id ?? null,
       });
+      // "Ett gäng är på väg": 3+ people around the same time → notify.
+      const active = (await db.listActiveCheckins()).filter((c) => c.area === input.area);
+      const size = groupSize(
+        active.map((c) => ({ arriveAt: new Date(c.arriveAt).getTime(), people: c.people })),
+        arriveAt.getTime()
+      );
+      if (size >= GROUP_MIN) {
+        const place = input.area === "hockeyrink" ? "rinken" : "skidspåret";
+        const soon = arriveAt.getTime() - Date.now() < 10 * 60 * 1000;
+        const time = arriveAt.toLocaleTimeString("sv-SE", {
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "Europe/Stockholm",
+        });
+        notifyTopicLater(
+          "group",
+          {
+            title: input.area === "hockeyrink" ? "Ett gäng är på rinken 🏒" : "Ett gäng ska åka skidor ⛷️",
+            body: soon
+              ? `${size} personer på ${place} just nu – häng med!`
+              : `${size} personer planerar ${place} kl ${time} – häng med!`,
+            url: input.area === "hockeyrink" ? "/" : "/skidspar",
+          },
+          { throttleMs: 2 * 3600 * 1000, throttleKey: input.area }
+        );
+      }
+
       // Opportunistic cleanup of old rows.
       db.purgeOldCheckins().catch(() => {});
       return { id: row.id };

@@ -9,6 +9,7 @@ import { bingoRouter } from "./routers/bingo";
 import { documentsRouter } from "./routers/documents";
 import { dutyRouter } from "./routers/duty";
 import { guidesRouter } from "./routers/guides";
+import { pushRouter } from "./routers/push";
 import { expensesRouter } from "./routers/expenses";
 import { refuelingsRouter } from "./routers/refuelings";
 import { scheduleRouter } from "./routers/schedule";
@@ -25,6 +26,7 @@ export const appRouter = router({
   status: statusRouter,
   duty: dutyRouter,
   guides: guidesRouter,
+  push: pushRouter,
   contacts: contactsRouter,
   bookings: bookingsRouter,
   chat: chatRouter,
