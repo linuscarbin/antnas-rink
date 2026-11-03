@@ -11,6 +11,14 @@ import { isR2Configured, uploadToR2 } from "./r2";
 
 const MAX_BYTES = 8 * 1024 * 1024; // 8 MB raw upload cap
 
+let resolvedUploadDir: string | null = null;
+
+/** Directory where disk-fallback uploads live (served under /uploads). */
+export function getUploadDir(): string {
+  if (!resolvedUploadDir) resolvedUploadDir = ensureUploadDir();
+  return resolvedUploadDir;
+}
+
 function ensureUploadDir(): string {
   let dir = ENV.uploadDir;
   try {
@@ -34,7 +42,7 @@ const upload = multer({
  *  - POST /api/upload : authenticated image upload -> R2 (or disk fallback)
  */
 export function registerUploads(app: Express) {
-  const dir = ensureUploadDir();
+  const dir = getUploadDir();
 
   // Disk fallback serving (no-op effect when R2 is used).
   app.use(
@@ -44,7 +52,16 @@ export function registerUploads(app: Express) {
 
   app.post(
     "/api/upload",
-    upload.single("file"),
+    (req, res, next) => {
+      upload.single("file")(req, res, err => {
+        if (!err) return next();
+        if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({ error: "Filen är för stor (max 8 MB)." });
+        }
+        console.error("[Upload] rejected:", err);
+        return res.status(400).json({ error: "Ogiltig uppladdning." });
+      });
+    },
     async (req: Request, res: Response) => {
       try {
         const user = await authenticateRequest(req);

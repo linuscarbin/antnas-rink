@@ -1,7 +1,29 @@
 import { ZipArchive } from "archiver";
 import type { Express, Request, Response } from "express";
+import fs from "fs";
+import path from "path";
 import { authenticateRequest } from "./auth";
+import { getUploadDir } from "./uploads";
 import * as db from "../db";
+
+/**
+ * Loads a receipt. Disk-stored receipts (/uploads/<file>) are read directly
+ * from the upload dir instead of over HTTP, which fails behind a reverse
+ * proxy without hairpin routing. R2 receipts are fetched by URL.
+ */
+async function loadReceipt(receiptUrl: string): Promise<Buffer | null> {
+  if (receiptUrl.startsWith("/uploads/")) {
+    const name = path.basename(receiptUrl.slice("/uploads/".length));
+    try {
+      return await fs.promises.readFile(path.join(getUploadDir(), name));
+    } catch {
+      return null;
+    }
+  }
+  const resp = await fetch(receiptUrl);
+  if (!resp.ok) return null;
+  return Buffer.from(await resp.arrayBuffer());
+}
 
 const AREAS = ["hockeyrink", "skidspar"] as const;
 type Area = (typeof AREAS)[number];
@@ -137,18 +159,12 @@ export function registerRefuelExport(app: Express) {
       });
       archive.pipe(res);
 
-      // Build an absolute URL for relative /uploads paths.
-      const origin = `${req.protocol}://${req.get("host")}`;
-
       for (const r of rows) {
         if (!r.receiptUrl) continue;
-        const url = r.receiptUrl.startsWith("/")
-          ? `${origin}${r.receiptUrl}`
-          : r.receiptUrl;
+        const url = r.receiptUrl;
         try {
-          const resp = await fetch(url);
-          if (!resp.ok) continue;
-          const buf = Buffer.from(await resp.arrayBuffer());
+          const buf = await loadReceipt(url);
+          if (!buf) continue;
           const date = new Date(r.purchasedAt).toISOString().slice(0, 10);
           const ext = url.split(".").pop()?.split("?")[0] || "img";
           const safeName = `${date}_${r.responsibleName.replace(/[^\w]+/g, "-")}_${(r.amountOre / 100).toFixed(0)}kr_id${r.id}.${ext}`;
@@ -248,16 +264,12 @@ export function registerRefuelExport(app: Express) {
         }
       });
       archive.pipe(res);
-      const origin = `${req.protocol}://${req.get("host")}`;
       for (const r of rows) {
         if (!r.receiptUrl) continue;
-        const url = r.receiptUrl.startsWith("/")
-          ? `${origin}${r.receiptUrl}`
-          : r.receiptUrl;
+        const url = r.receiptUrl;
         try {
-          const resp = await fetch(url);
-          if (!resp.ok) continue;
-          const buf = Buffer.from(await resp.arrayBuffer());
+          const buf = await loadReceipt(url);
+          if (!buf) continue;
           const date = new Date(r.purchasedAt).toISOString().slice(0, 10);
           const ext = url.split(".").pop()?.split("?")[0] || "img";
           const safeName = `${date}_${r.responsibleName.replace(/[^\w]+/g, "-")}_${(r.amountOre / 100).toFixed(0)}kr_id${r.id}.${ext}`;
