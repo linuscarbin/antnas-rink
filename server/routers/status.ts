@@ -1,6 +1,7 @@
 import { z } from "zod";
 import * as db from "../db";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { assertFunctionary } from "../_core/functionary";
 
 /** Returns Date of the start of the current winter season (Jul 1 -> Jun 30). */
 function seasonStart(now = new Date()): Date {
@@ -14,8 +15,14 @@ export const statusRouter = router({
   }),
 
   markPlogad: protectedProcedure
-    .input(z.object({ helpers: z.string().max(300).optional() }))
+    .input(
+      z.object({
+        helpers: z.string().max(300).optional(),
+        photoUrl: z.string().max(512).regex(/^(https?:\/\/|\/uploads\/)/).optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, "hockeyrink");
       const name = ctx.user.name || ctx.user.email || "Okänd";
       await db.logEffort({
         kind: "plogad",
@@ -23,12 +30,21 @@ export const statusRouter = router({
         byName: name,
         helpers: input.helpers?.trim() || null,
       });
-      return db.updateRinkStatus({ plogadAt: new Date(), plogadBy: name });
+      return db.updateRinkStatus({ plogadAt: new Date(), plogadBy: name,
+        ...(input.photoUrl
+          ? { photoUrl: input.photoUrl, photoAt: new Date(), photoBy: name }
+          : {}) });
     }),
 
   markSpolad: protectedProcedure
-    .input(z.object({ helpers: z.string().max(300).optional() }))
+    .input(
+      z.object({
+        helpers: z.string().max(300).optional(),
+        photoUrl: z.string().max(512).regex(/^(https?:\/\/|\/uploads\/)/).optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, "hockeyrink");
       const name = ctx.user.name || ctx.user.email || "Okänd";
       await db.logEffort({
         kind: "spolad",
@@ -36,13 +52,17 @@ export const statusRouter = router({
         byName: name,
         helpers: input.helpers?.trim() || null,
       });
-      return db.updateRinkStatus({ spoladAt: new Date(), spoladBy: name });
+      return db.updateRinkStatus({ spoladAt: new Date(), spoladBy: name,
+        ...(input.photoUrl
+          ? { photoUrl: input.photoUrl, photoAt: new Date(), photoBy: name }
+          : {}) });
     }),
 
   // Undo the latest plogad/spolad marking (clears timestamp + removes effort).
   undo: protectedProcedure
     .input(z.object({ kind: z.enum(["plogad", "spolad"]) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, "hockeyrink");
       await db.removeLatestEffort(input.kind);
       if (input.kind === "plogad") {
         return db.updateRinkStatus({ plogadAt: null, plogadBy: null });
@@ -52,7 +72,8 @@ export const statusRouter = router({
 
   setNote: protectedProcedure
     .input(z.object({ note: z.string().max(500) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, "hockeyrink");
       return db.updateRinkStatus({ note: input.note || null });
     }),
 
@@ -62,5 +83,18 @@ export const statusRouter = router({
     .query(async ({ input }) => {
       const since = input?.allTime ? undefined : seasonStart();
       return db.getEffortLeaderboard(["plogad", "spolad"], since);
+    }),
+
+  // Functionaries: post a new photo without marking anything.
+  setPhoto: protectedProcedure
+    .input(z.object({ photoUrl: z.string().max(512).regex(/^(https?:\/\/|\/uploads\/)/).nullable() }))
+    .mutation(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, "hockeyrink");
+      const name = ctx.user.name || ctx.user.email || "Okänd";
+      return db.updateRinkStatus(
+        input.photoUrl
+          ? { photoUrl: input.photoUrl, photoAt: new Date(), photoBy: name }
+          : { photoUrl: null, photoAt: null, photoBy: null }
+      );
     }),
 });

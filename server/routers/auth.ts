@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { functionaryAreas } from "../_core/functionary";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import {
@@ -29,7 +30,12 @@ function sanitize(user: {
 
 export const authRouter = router({
   // Current user (null if not logged in).
-  me: publicProcedure.query(({ ctx }) => (ctx.user ? sanitize(ctx.user) : null)),
+  me: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.user) return null;
+    // Functionary areas: admin, or linked on plog/spol (rink) / spår (track) duty.
+    const functionary = await functionaryAreas(ctx.user);
+    return { ...sanitize(ctx.user), functionary };
+  }),
 
   // Register a new account. The very first account becomes admin (owner).
   register: publicProcedure

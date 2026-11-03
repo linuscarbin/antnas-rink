@@ -1,6 +1,7 @@
 import { z } from "zod";
 import * as db from "../db";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { assertFunctionary } from "../_core/functionary";
 
 const CONDITIONS = [
   "Mycket bra",
@@ -24,8 +25,14 @@ export const trackRouter = router({
 
   // Logged-in: mark the track as groomed (draget) now.
   markDraget: protectedProcedure
-    .input(z.object({ helpers: z.string().max(300).optional() }))
+    .input(
+      z.object({
+        helpers: z.string().max(300).optional(),
+        photoUrl: z.string().max(512).regex(/^(https?:\/\/|\/uploads\/)/).optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, "skidspar");
       const name = ctx.user.name || ctx.user.email || "Okänd";
       await db.logEffort({
         kind: "draget",
@@ -33,11 +40,15 @@ export const trackRouter = router({
         byName: name,
         helpers: input.helpers?.trim() || null,
       });
-      return db.updateTrackStatus({ dragetAt: new Date(), dragetBy: name });
+      return db.updateTrackStatus({ dragetAt: new Date(), dragetBy: name,
+        ...(input.photoUrl
+          ? { photoUrl: input.photoUrl, photoAt: new Date(), photoBy: name }
+          : {}) });
     }),
 
   // Undo the latest draget marking.
-  undo: protectedProcedure.mutation(async () => {
+  undo: protectedProcedure.mutation(async ({ ctx }) => {
+    await assertFunctionary(ctx.user, "skidspar");
     await db.removeLatestEffort("draget");
     return db.updateTrackStatus({ dragetAt: null, dragetBy: null });
   }),
@@ -53,14 +64,29 @@ export const trackRouter = router({
   // Logged-in: set the track condition.
   setCondition: protectedProcedure
     .input(z.object({ condition: z.enum(CONDITIONS) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, "skidspar");
       return db.updateTrackStatus({ condition: input.condition });
     }),
 
   // Logged-in: set a free-text note.
   setNote: protectedProcedure
     .input(z.object({ note: z.string().max(500) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, "skidspar");
       return db.updateTrackStatus({ note: input.note || null });
+    }),
+
+  // Functionaries: post a new photo without marking anything.
+  setPhoto: protectedProcedure
+    .input(z.object({ photoUrl: z.string().max(512).regex(/^(https?:\/\/|\/uploads\/)/).nullable() }))
+    .mutation(async ({ ctx, input }) => {
+      await assertFunctionary(ctx.user, "skidspar");
+      const name = ctx.user.name || ctx.user.email || "Okänd";
+      return db.updateTrackStatus(
+        input.photoUrl
+          ? { photoUrl: input.photoUrl, photoAt: new Date(), photoBy: name }
+          : { photoUrl: null, photoAt: null, photoBy: null }
+      );
     }),
 });

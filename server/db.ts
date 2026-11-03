@@ -6,6 +6,10 @@ import {
   bookings,
   documents,
   chatMessages,
+  checkins,
+  InsertCheckin,
+  guides,
+  InsertGuide,
   contacts,
   dutySchedule,
   efforts,
@@ -148,6 +152,9 @@ export async function updateRinkStatus(data: {
   spoladAt?: Date | null;
   spoladBy?: string | null;
   note?: string | null;
+  photoUrl?: string | null;
+  photoAt?: Date | null;
+  photoBy?: string | null;
 }) {
   const db = await requireDb();
   const current = await getRinkStatus();
@@ -262,6 +269,9 @@ export async function updateTrackStatus(data: {
     | "Ej åkbart"
     | null;
   note?: string | null;
+  photoUrl?: string | null;
+  photoAt?: Date | null;
+  photoBy?: string | null;
 }) {
   const db = await requireDb();
   const current = await getTrackStatus();
@@ -868,3 +878,105 @@ export async function getSettingByTaskUid(taskUid: string) {
 
 // Re-export operators that routers may need.
 export { and, eq, ne, or };
+
+/* ------------------------- Functionary access ------------------------- */
+
+/**
+ * Which areas a user is a functionary for, derived from the duty schedules.
+ * A user linked as plog-/spoljour (rink) or spårjour (track) in the current
+ * or previous ISO year counts as functionary for that area.
+ */
+export async function getDutyAreas(
+  userId: number
+): Promise<{ hockeyrink: boolean; skidspar: boolean }> {
+  const db = await requireDb();
+  const minYear = new Date().getFullYear() - 1;
+  const rink = await db
+    .select({ id: dutySchedule.id })
+    .from(dutySchedule)
+    .where(
+      and(
+        gte(dutySchedule.year, minYear),
+        or(
+          eq(dutySchedule.plogjourUserId, userId),
+          eq(dutySchedule.spoljourUserId, userId)
+        )
+      )
+    )
+    .limit(1);
+  const track = await db
+    .select({ id: skiDutySchedule.id })
+    .from(skiDutySchedule)
+    .where(
+      and(
+        gte(skiDutySchedule.year, minYear),
+        eq(skiDutySchedule.sparjourUserId, userId)
+      )
+    )
+    .limit(1);
+  return { hockeyrink: rink.length > 0, skidspar: track.length > 0 };
+}
+
+/* ------------------------------ Check-ins ------------------------------ */
+
+export async function listActiveCheckins(now = new Date()) {
+  const db = await requireDb();
+  return db
+    .select()
+    .from(checkins)
+    .where(gt(checkins.expiresAt, now))
+    .orderBy(checkins.arriveAt);
+}
+
+export async function createCheckin(data: InsertCheckin) {
+  const db = await requireDb();
+  const result = await db.insert(checkins).values(data).$returningId();
+  const rows = await db
+    .select()
+    .from(checkins)
+    .where(eq(checkins.id, result[0].id))
+    .limit(1);
+  return rows[0];
+}
+
+export async function getCheckin(id: number) {
+  const db = await requireDb();
+  const rows = await db.select().from(checkins).where(eq(checkins.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function deleteCheckin(id: number) {
+  const db = await requireDb();
+  await db.delete(checkins).where(eq(checkins.id, id));
+}
+
+/** Housekeeping: drop check-ins that expired more than a day ago. */
+export async function purgeOldCheckins(now = new Date()) {
+  const db = await requireDb();
+  await db
+    .delete(checkins)
+    .where(lt(checkins.expiresAt, new Date(now.getTime() - 24 * 3600 * 1000)));
+}
+
+/* -------------------------------- Guides -------------------------------- */
+
+export async function listGuides() {
+  const db = await requireDb();
+  return db.select().from(guides).orderBy(guides.sortOrder, guides.title);
+}
+
+export async function createGuide(data: InsertGuide) {
+  const db = await requireDb();
+  const result = await db.insert(guides).values(data).$returningId();
+  return result[0].id;
+}
+
+export async function updateGuide(id: number, data: Partial<InsertGuide>) {
+  const db = await requireDb();
+  await db.update(guides).set(data).where(eq(guides.id, id));
+}
+
+export async function deleteGuide(id: number) {
+  const db = await requireDb();
+  await db.delete(guides).where(eq(guides.id, id));
+}

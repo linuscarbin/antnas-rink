@@ -6,8 +6,11 @@ import {
   CalendarDays,
   LayoutDashboard,
   LogOut,
+  Menu,
+  ShieldCheck,
   type LucideIcon,
   FolderOpen,
+  Info,
   MessageSquare,
   Snowflake,
   Sun,
@@ -15,7 +18,8 @@ import {
   Trees,
   Users,
 } from "lucide-react";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Link, useLocation } from "wouter";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -26,6 +30,22 @@ const WINTER_NAV: NavItem[] = [
   { href: "/schema", label: "Schema", icon: CalendarDays },
   { href: "/boka", label: "Boka", icon: CalendarDays },
   { href: "/anslagstavla", label: "Anslagstavla", icon: MessageSquare },
+  { href: "/info", label: "Regler & info", icon: Info },
+  { href: "/dokument", label: "Dokument", icon: FolderOpen },
+  { href: "/kontakt", label: "Kontakt", icon: Users },
+];
+
+/** Bottom bar on mobile: the four most used pages + "Mer". */
+const WINTER_TABS: NavItem[] = [
+  { href: "/", label: "Rinken", icon: Snowflake },
+  { href: "/skidspar", label: "Skidspår", icon: Trees },
+  { href: "/anslagstavla", label: "Tavlan", icon: MessageSquare },
+  { href: "/schema", label: "Schema", icon: CalendarDays },
+];
+
+const SUMMER_TABS: NavItem[] = [
+  { href: "/bilbingo", label: "Bilbingo", icon: Ticket },
+  { href: "/anslagstavla", label: "Tavlan", icon: MessageSquare },
   { href: "/dokument", label: "Dokument", icon: FolderOpen },
   { href: "/kontakt", label: "Kontakt", icon: Users },
 ];
@@ -40,12 +60,26 @@ const SUMMER_NAV: NavItem[] = [
 ];
 
 export default function SiteLayout({ children }: { children: ReactNode }) {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isRinkFunctionary, isTrackFunctionary } =
+    useAuth();
+  const isFunctionary = isRinkFunctionary || isTrackFunctionary;
   const [location] = useLocation();
+  const [moreOpen, setMoreOpen] = useState(false);
   const seasonQuery = trpc.settings.getSeason.useQuery();
   const season = seasonQuery.data?.season ?? "vinter";
   const isSummer = season === "sommar";
   const nav = isSummer ? SUMMER_NAV : WINTER_NAV;
+  const tabs = isSummer ? SUMMER_TABS : WINTER_TABS;
+  const moreItems: NavItem[] = [
+    ...nav.filter((n) => !tabs.some((t) => t.href === n.href)),
+    ...(isSummer ? [] : [{ href: "/bilbingo", label: "Bilbingo", icon: Ticket }]),
+    ...(isFunctionary
+      ? [{ href: "/funktionar", label: "Funktionär", icon: ShieldCheck }]
+      : []),
+    ...(user?.role === "admin"
+      ? [{ href: "/admin", label: "Admin", icon: LayoutDashboard }]
+      : []),
+  ];
   const brandWord = isSummer ? "Sommar" : "Vinter";
   const BrandIcon = isSummer ? Sun : Snowflake;
 
@@ -62,7 +96,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {nav.map((item) => {
               const active = location === item.href;
               return (
@@ -82,8 +116,16 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-2 shrink-0">
+            {isFunctionary && (
+              <Link href="/funktionar" className="hidden md:block">
+                <Button variant="outline" size="sm" className="bg-card gap-1.5">
+                  <ShieldCheck className="h-4 w-4" />
+                  <span className="hidden sm:inline">Funktionär</span>
+                </Button>
+              </Link>
+            )}
             {user?.role === "admin" && (
-              <Link href="/admin">
+              <Link href="/admin" className="hidden md:block">
                 <Button variant="outline" size="sm" className="bg-card gap-1.5">
                   <LayoutDashboard className="h-4 w-4" />
                   <span className="hidden sm:inline">Admin</span>
@@ -123,8 +165,8 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* Mobile nav */}
-        <nav className="md:hidden border-t border-border/60 bg-background/90">
+        {/* Tablet nav (md–lg): compact row */}
+        <nav className="hidden md:block lg:hidden border-t border-border/60 bg-background/90">
           <div className="container flex items-center gap-1 overflow-x-auto py-2">
             {nav.map((item) => {
               const active = location === item.href;
@@ -134,9 +176,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
                   key={item.href}
                   href={item.href}
                   className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    active
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground"
+                    active ? "bg-accent text-accent-foreground" : "text-muted-foreground"
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -148,7 +188,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
         </nav>
       </header>
 
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-20 md:pb-0">{children}</main>
 
       <footer className="border-t border-border/70 bg-background/70">
         <div className="container py-6 text-sm text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-2">
@@ -156,6 +196,64 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
           <span>Hockeyrink, skidspår och bilbingo — skött av oss tillsammans.</span>
         </div>
       </footer>
+
+      {/* Mobile bottom bar */}
+      <nav
+        className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 backdrop-blur-md"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="grid grid-cols-5">
+          {tabs.map((item) => {
+            const active = location === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold ${
+                  active ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                {item.label}
+              </Link>
+            );
+          })}
+          <button
+            onClick={() => setMoreOpen(true)}
+            className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold ${
+              moreItems.some((m) => m.href === location) ? "text-primary" : "text-muted-foreground"
+            }`}
+          >
+            <Menu className="h-5 w-5" />
+            Mer
+          </button>
+        </div>
+      </nav>
+
+      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl pb-8">
+          <SheetHeader>
+            <SheetTitle>Mer</SheetTitle>
+          </SheetHeader>
+          <div className="grid grid-cols-2 gap-2 px-4">
+            {moreItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMoreOpen(false)}
+                  className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-3 text-sm font-semibold"
+                >
+                  <Icon className="h-4 w-4 text-primary" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

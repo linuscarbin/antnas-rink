@@ -6,6 +6,7 @@ import { getLoginUrl } from "@/const";
 import {
   CalendarDays,
   CalendarRange,
+  BookOpen,
   Settings,
   FolderOpen,
   Ticket,
@@ -19,6 +20,7 @@ import AdminBookings from "./admin/AdminBookings";
 import AdminDocs from "./admin/AdminDocs";
 import AdminContacts from "./admin/AdminContacts";
 import AdminDuty from "./admin/AdminDuty";
+import AdminGuides from "./admin/AdminGuides";
 import AdminSettings from "./admin/AdminSettings";
 import AdminSkiDuty from "./admin/AdminSkiDuty";
 import AdminUsers from "./admin/AdminUsers";
@@ -26,6 +28,7 @@ import AdminUsers from "./admin/AdminUsers";
 const TABS = [
   { id: "duty", label: "Rinkjour", icon: CalendarDays },
   { id: "skiduty", label: "Spårjour", icon: Trees },
+  { id: "guides", label: "Guider", icon: BookOpen },
   { id: "bingo", label: "Bilbingo", icon: Ticket },
   { id: "docs", label: "Dokument", icon: FolderOpen },
   { id: "contacts", label: "Kontakter", icon: Users },
@@ -115,6 +118,7 @@ export default function Admin() {
         <div className="mt-6">
           {tab === "duty" && <AdminDuty />}
           {tab === "skiduty" && <AdminSkiDuty />}
+          {tab === "guides" && <AdminGuides />}
           {tab === "bingo" && <AdminBingo />}
           {tab === "docs" && <AdminDocs />}
           {tab === "contacts" && <AdminContacts />}

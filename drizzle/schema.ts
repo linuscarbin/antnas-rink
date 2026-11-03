@@ -46,6 +46,10 @@ export const rinkStatus = mysqlTable("rinkStatus", {
   spoladBy: varchar("spoladBy", { length: 120 }),
   /** Optional free-text note shown on the public status card. */
   note: text("note"),
+  /** Latest photo of the rink (taken when plowing/flooding). */
+  photoUrl: varchar("photoUrl", { length: 512 }),
+  photoAt: timestamp("photoAt"),
+  photoBy: varchar("photoBy", { length: 120 }),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
@@ -101,6 +105,10 @@ export const trackStatus = mysqlTable("trackStatus", {
   ]),
   /** Optional free-text note about surface (nysnö, isigt, blött etc.). */
   note: text("note"),
+  /** Latest photo of the track. */
+  photoUrl: varchar("photoUrl", { length: 512 }),
+  photoAt: timestamp("photoAt"),
+  photoBy: varchar("photoBy", { length: 120 }),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
@@ -364,3 +372,52 @@ export const systemSettings = mysqlTable("systemSettings", {
 
 export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertSystemSetting = typeof systemSettings.$inferInsert;
+
+/**
+ * "Jag är på rinken/spåret nu" — lightweight, anonymous-friendly check-ins
+ * that expire automatically. Used to show how many are out right now and
+ * who is coming later, to encourage spontaneous play.
+ */
+export const checkins = mysqlTable("checkins", {
+  id: int("id").autoincrement().primaryKey(),
+  area: mysqlEnum("area", ["hockeyrink", "skidspar"]).notNull(),
+  /** Optional first name / nickname. Null = shown only as a number. */
+  displayName: varchar("displayName", { length: 40 }),
+  /** How many people this check-in represents (e.g. "Lisa + 3 kompisar"). */
+  people: int("people").default(1).notNull(),
+  /** When they are/will be there. */
+  arriveAt: timestamp("arriveAt").notNull(),
+  /** When the check-in disappears. */
+  expiresAt: timestamp("expiresAt").notNull(),
+  /** Random secret kept in the creator's browser, lets them remove it. */
+  ownerKey: varchar("ownerKey", { length: 64 }).notNull(),
+  userId: int("userId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Checkin = typeof checkins.$inferSelect;
+export type InsertCheckin = typeof checkins.$inferInsert;
+
+/**
+ * How-to guides and internal info for functionaries (plog-/spol-/spårjour):
+ * hitching the plow, filling the water tank, storage code, contacts etc.
+ * Only visible to admins and people on duty for the guide's area.
+ */
+export const guides = mysqlTable("guides", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 160 }).notNull(),
+  /**
+   * Visibility: "publik" = everyone (rules, tips), "alla" = every
+   * functionary, otherwise only that area's duty members.
+   */
+  area: mysqlEnum("area", ["publik", "alla", "hockeyrink", "skidspar"]).default("alla").notNull(),
+  /** Markdown body. */
+  body: text("body").notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  updatedByName: varchar("updatedByName", { length: 120 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Guide = typeof guides.$inferSelect;
+export type InsertGuide = typeof guides.$inferInsert;
