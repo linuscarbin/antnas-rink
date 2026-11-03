@@ -106,6 +106,19 @@ Det **första kontot som registreras blir automatiskt administratör** (ägare).
    Om R2 *inte* konfigureras faller appen tillbaka till disklagring i `UPLOAD_DIR`
    (montera då en persistent volym på `/data` i Coolify). Med R2 behövs ingen volym.
 
+### Egen domän (vinter.antnäs.se via Loopia)
+
+Domäner med å/ä/ö anges i kodad form (punycode) i DNS, Coolify och
+miljövariabler: `vinter.antnäs.se` = `vinter.xn--antns-jra.se`.
+
+1. **Loopia → DNS-editor för antnäs.se:** lägg till underdomänen `vinter`
+   med en **A-post** till Coolify-serverns IP-adress.
+2. **Coolify → Domains:** `https://vinter.xn--antns-jra.se` (fler domäner
+   kommasepareras). Sätt `PUBLIC_BASE_URL=https://vinter.xn--antns-jra.se`
+   och kör Redeploy – certifikatet hämtas automatiskt.
+3. Installerad app och notiser hör till adressen: byt domän innan ni bjuder
+   in alla, annars får de installera och slå på notiser igen.
+
 ### docker-compose (lokalt / referens)
 
 Ett `docker-compose.yml` finns med app + MySQL för att prova hela stacken lokalt:
