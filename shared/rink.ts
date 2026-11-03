@@ -87,3 +87,25 @@ export function getDateOfIsoWeek(year: number, week: number): Date {
   }
   return isoWeekStart;
 }
+
+/**
+ * Rotates teams week by week from one ISO week to another (inclusive),
+ * across new year if needed (a winter season runs e.g. v45 → v12).
+ */
+export function rotateTeams(
+  from: { year: number; week: number },
+  to: { year: number; week: number },
+  teamIds: number[],
+  startIndex = 0
+): { year: number; week: number; teamId: number }[] {
+  if (!teamIds.length) return [];
+  const out: { year: number; week: number; teamId: number }[] = [];
+  const start = getDateOfIsoWeek(from.year, from.week).getTime();
+  const end = getDateOfIsoWeek(to.year, to.week).getTime();
+  const WEEK = 7 * 24 * 3600 * 1000;
+  for (let t = start, i = 0; t <= end && i < 60; t += WEEK, i++) {
+    const { year, week } = getIsoWeek(new Date(t));
+    out.push({ year, week, teamId: teamIds[(startIndex + i) % teamIds.length] });
+  }
+  return out;
+}

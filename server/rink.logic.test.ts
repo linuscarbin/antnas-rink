@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   findBookingConflicts,
   getIsoWeek,
+  rotateTeams,
   ZONES,
   ZONE_LABELS,
   type BookingSlot,
@@ -80,5 +81,26 @@ describe("ISO week", () => {
     const { week } = getIsoWeek(new Date(Date.UTC(2026, 6, 15)));
     expect(week).toBeGreaterThanOrEqual(1);
     expect(week).toBeLessThanOrEqual(53);
+  });
+});
+
+describe("rotateTeams", () => {
+  it("rotates teams in order across new year (2026 has an ISO week 53)", () => {
+    const r = rotateTeams({ year: 2026, week: 51 }, { year: 2027, week: 2 }, [10, 20, 30]);
+    expect(r.map((x) => `${x.year}-${x.week}:${x.teamId}`)).toEqual([
+      "2026-51:10",
+      "2026-52:20",
+      "2026-53:30",
+      "2027-1:10",
+      "2027-2:20",
+    ]);
+  });
+  it("can start with another team", () => {
+    const r = rotateTeams({ year: 2026, week: 45 }, { year: 2026, week: 46 }, [1, 2, 3], 2);
+    expect(r.map((x) => x.teamId)).toEqual([3, 1]);
+  });
+  it("returns nothing without teams or when range is reversed", () => {
+    expect(rotateTeams({ year: 2026, week: 45 }, { year: 2026, week: 50 }, [])).toEqual([]);
+    expect(rotateTeams({ year: 2026, week: 50 }, { year: 2026, week: 45 }, [1])).toEqual([]);
   });
 });

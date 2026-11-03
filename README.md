@@ -134,8 +134,8 @@ Sajten är en installerbar webbapp med push-notiser – ingen App Store behövs.
   bokningar, anslagstavla och *Regler & info*. Kan checka in med
   "Jag är på rinken nu" utan konto.
 - **Inloggad användare:** bokar, skriver på anslagstavlan, anmäler förhinder.
-- **Funktionär (jourhavare):** alla som admin kopplat som medlem på
-  plog-/spoljour (rinken) eller spårjour (skidspåret) i år eller förra året.
+- **Funktionär (jourhavare):** alla som admin kopplat som medlem i
+  ett rinkjourlag (rinken) eller som spårjour (skidspåret).
   Markerar plogad/spolad/draget med foto, stänger rinken tillfälligt, ser
   *Funktionär*-sidan med guider (t.ex. förrådskod) samt tankning, kvitton och
   utlägg för sitt område. Behörigheten kontrolleras på servern.

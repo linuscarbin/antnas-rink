@@ -42,9 +42,16 @@ export async function sendWeeklyDutyReminders(now = new Date()) {
     }
   };
 
-  // Rink duty (plogjour / spoljour).
+  // Rink duty: the week's rinkjour team (or legacy plog-/spoljour).
   const duty = await db.getDuty(year, week);
-  if (duty) {
+  if (duty?.teamId) {
+    const absent = new Set(
+      (await db.listAbsences(year)).filter((a) => a.week === week).map((a) => a.memberId)
+    );
+    for (const m of await db.listTeamMembers(duty.teamId)) {
+      if (!absent.has(m.id)) await addRecipient(m.userId, "Rinkjour", m.name, "rink", duty.note);
+    }
+  } else if (duty) {
     await addRecipient(duty.plogjourUserId, "Plogjour", duty.plogjourName, "rink", duty.note);
     await addRecipient(duty.spoljourUserId, "Spoljour", duty.spoljourName, "rink", duty.note);
   }
@@ -65,7 +72,7 @@ export async function sendWeeklyDutyReminders(now = new Date()) {
   for (const r of recipients) {
     const areaText =
       r.area === "rink"
-        ? "Tänk på att hålla rinken i skick och uppdatera statusen när du har plogat eller spolat."
+        ? "Ploga och spola efter behov, och markera plogad/spolad på sidan när ni är klara."
         : "Tänk på att dra spåret vid behov och uppdatera spårstatus och spårskick.";
     const body = `
       <p>Hej ${esc(r.name || "")}!</p>

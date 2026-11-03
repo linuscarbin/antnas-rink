@@ -180,6 +180,14 @@ export default function Home() {
   const { year, week } = getIsoWeek(now);
   const dutyQuery = trpc.duty.list.useQuery({ year });
   const thisWeekDuty = dutyQuery.data?.find((d) => d.week === week);
+  const teamsQuery = trpc.rinkTeams.list.useQuery();
+  const absencesQuery = trpc.rinkTeams.absences.useQuery({ year });
+  const thisWeekTeam = thisWeekDuty?.teamId
+    ? teamsQuery.data?.find((t) => t.id === thisWeekDuty.teamId)
+    : undefined;
+  const absentIds = new Set(
+    (absencesQuery.data ?? []).filter((a) => a.week === week).map((a) => a.memberId)
+  );
 
   const leaderboardQuery = trpc.status.leaderboard.useQuery();
   const invalidateAll = () => {
@@ -377,7 +385,7 @@ export default function Home() {
 
           {isAuthenticated && !isRinkFunctionary && (
             <div className="sm:col-span-2 rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-              Status uppdateras av de som har plog- och spoljour. Vill du
+              Status uppdateras av rinkjouren. Vill du
               hjälpa till? Hör av dig till en admin så läggs du in i schemat.
             </div>
           )}
@@ -468,7 +476,7 @@ export default function Home() {
           <div className="iso-card p-6">
             <div className="flex items-center justify-between">
               <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                Vecka {week} · Jour
+                Vecka {week} · Rinkjour
               </div>
               <Link href="/schema" className="text-sm font-semibold text-primary">
                 Hela schemat
@@ -476,21 +484,29 @@ export default function Home() {
             </div>
             {dutyQuery.isLoading ? (
               <Skeleton className="mt-3 h-20" />
-            ) : thisWeekDuty ? (
-              <div className="mt-3 space-y-3">
-                <DutyRow
-                  label="Plogjour"
-                  name={thisWeekDuty.plogjourName}
-                  phone={thisWeekDuty.plogjourPhone}
-                  conflict={thisWeekDuty.plogjourConflict}
-                />
-                <DutyRow
-                  label="Spoljour"
-                  name={thisWeekDuty.spoljourName}
-                  phone={thisWeekDuty.spoljourPhone}
-                  conflict={thisWeekDuty.spoljourConflict}
-                />
+            ) : thisWeekTeam ? (
+              <div className="mt-3">
+                <div className="font-extrabold">{thisWeekTeam.name}</div>
+                <ul className="mt-2 space-y-1.5">
+                  {thisWeekTeam.members.map((m) => (
+                    <DutyRow
+                      key={m.id}
+                      name={m.name}
+                      phone={m.phone}
+                      conflict={absentIds.has(m.id)}
+                    />
+                  ))}
+                </ul>
               </div>
+            ) : thisWeekDuty && (thisWeekDuty.plogjourName || thisWeekDuty.spoljourName) ? (
+              <ul className="mt-3 space-y-1.5">
+                {thisWeekDuty.plogjourName && (
+                  <DutyRow name={thisWeekDuty.plogjourName} phone={thisWeekDuty.plogjourPhone} conflict={thisWeekDuty.plogjourConflict} />
+                )}
+                {thisWeekDuty.spoljourName && (
+                  <DutyRow name={thisWeekDuty.spoljourName} phone={thisWeekDuty.spoljourPhone} conflict={thisWeekDuty.spoljourConflict} />
+                )}
+              </ul>
             ) : (
               <p className="mt-2 text-sm text-muted-foreground">
                 Ingen jour inlagd för denna vecka ännu.
@@ -561,39 +577,31 @@ export function Leaderboard({
 }
 
 function DutyRow({
-  label,
   name,
   phone,
   conflict,
 }: {
-  label: string;
   name: string | null;
   phone: string | null;
   conflict: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <div>
-        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {label}
-        </div>
-        <div className="font-semibold">
+    <li className="flex items-center justify-between gap-2 text-sm">
+      <span className="flex items-center gap-2">
+        <span className={`font-semibold ${conflict ? "line-through text-muted-foreground" : ""}`}>
           {name || "—"}
-          {conflict && (
-            <span className="ml-2 rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-bold text-destructive">
-              Förhinder
-            </span>
-          )}
-        </div>
-      </div>
+        </span>
+        {conflict && (
+          <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-bold text-destructive">
+            Förhinder
+          </span>
+        )}
+      </span>
       {phone && (
-        <a
-          href={`tel:${phone}`}
-          className="inline-flex items-center gap-1 text-sm font-semibold text-primary"
-        >
+        <a href={`tel:${phone}`} className="inline-flex items-center gap-1 font-semibold text-primary">
           <Phone className="h-3.5 w-3.5" /> {phone}
         </a>
       )}
-    </div>
+    </li>
   );
 }

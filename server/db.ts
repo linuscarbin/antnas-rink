@@ -13,6 +13,9 @@ import {
   InsertGuide,
   pushSubscriptions,
   InsertPushSubscription,
+  rinkTeams,
+  rinkTeamMembers,
+  dutyAbsences,
   contacts,
   dutySchedule,
   efforts,
@@ -887,7 +890,7 @@ export { and, eq, ne, or };
 
 /**
  * Which areas a user is a functionary for, derived from the duty schedules.
- * A user linked as plog-/spoljour (rink) or spårjour (track) in the current
+ * A rinkjour team member, or a user linked as (legacy) plog-/spoljour or spårjour in the current
  * or previous ISO year counts as functionary for that area.
  */
 export async function getDutyAreas(
@@ -918,7 +921,15 @@ export async function getDutyAreas(
       )
     )
     .limit(1);
-  return { hockeyrink: rink.length > 0, skidspar: track.length > 0 };
+  const member = await db
+    .select({ id: rinkTeamMembers.id })
+    .from(rinkTeamMembers)
+    .where(eq(rinkTeamMembers.userId, userId))
+    .limit(1);
+  return {
+    hockeyrink: rink.length > 0 || member.length > 0,
+    skidspar: track.length > 0,
+  };
 }
 
 /* ------------------------------ Check-ins ------------------------------ */
@@ -1047,6 +1058,10 @@ export async function listFunctionaryUserIds(
       if (r.a) ids.add(r.a);
       if (r.b) ids.add(r.b);
     });
+    const members = await db
+      .select({ u: rinkTeamMembers.userId })
+      .from(rinkTeamMembers);
+    members.forEach((m) => m.u && ids.add(m.u));
   } else {
     const rows = await db
       .select({ a: skiDutySchedule.sparjourUserId })
@@ -1056,4 +1071,95 @@ export async function listFunctionaryUserIds(
   }
   (await listAdmins()).forEach((a) => ids.add(a.id));
   return Array.from(ids);
+}
+
+/* --------------------------- Rinkjour teams --------------------------- */
+
+export async function listRinkTeams() {
+  const db = await requireDb();
+  const teams = await db.select().from(rinkTeams).orderBy(rinkTeams.sortOrder, rinkTeams.id);
+  const members = await db.select().from(rinkTeamMembers).orderBy(rinkTeamMembers.id);
+  return teams.map((t) => ({ ...t, members: members.filter((m) => m.teamId === t.id) }));
+}
+
+export async function createRinkTeam(name: string) {
+  const db = await requireDb();
+  const count = (await db.select({ id: rinkTeams.id }).from(rinkTeams)).length;
+  const r = await db.insert(rinkTeams).values({ name, sortOrder: count }).$returningId();
+  return r[0].id;
+}
+
+export async function renameRinkTeam(id: number, name: string) {
+  const db = await requireDb();
+  await db.update(rinkTeams).set({ name }).where(eq(rinkTeams.id, id));
+}
+
+export async function deleteRinkTeam(id: number) {
+  const db = await requireDb();
+  const members = await db
+    .select({ id: rinkTeamMembers.id })
+    .from(rinkTeamMembers)
+    .where(eq(rinkTeamMembers.teamId, id));
+  if (members.length) {
+    await db.delete(dutyAbsences).where(inArray(dutyAbsences.memberId, members.map((m) => m.id)));
+  }
+  await db.delete(rinkTeamMembers).where(eq(rinkTeamMembers.teamId, id));
+  await db.update(dutySchedule).set({ teamId: null }).where(eq(dutySchedule.teamId, id));
+  await db.delete(rinkTeams).where(eq(rinkTeams.id, id));
+}
+
+export async function addRinkTeamMember(data: {
+  teamId: number;
+  userId: number | null;
+  name: string;
+  phone: string | null;
+}) {
+  const db = await requireDb();
+  const r = await db.insert(rinkTeamMembers).values(data).$returningId();
+  return r[0].id;
+}
+
+export async function getRinkTeamMember(id: number) {
+  const db = await requireDb();
+  const rows = await db.select().from(rinkTeamMembers).where(eq(rinkTeamMembers.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function removeRinkTeamMember(id: number) {
+  const db = await requireDb();
+  await db.delete(dutyAbsences).where(eq(dutyAbsences.memberId, id));
+  await db.delete(rinkTeamMembers).where(eq(rinkTeamMembers.id, id));
+}
+
+export async function listTeamMembers(teamId: number) {
+  const db = await requireDb();
+  return db.select().from(rinkTeamMembers).where(eq(rinkTeamMembers.teamId, teamId));
+}
+
+export async function listAbsences(year?: number) {
+  const db = await requireDb();
+  if (year) return db.select().from(dutyAbsences).where(eq(dutyAbsences.year, year));
+  return db.select().from(dutyAbsences);
+}
+
+export async function setAbsence(
+  year: number,
+  week: number,
+  memberId: number,
+  absent: boolean,
+  message: string | null
+) {
+  const db = await requireDb();
+  await db
+    .delete(dutyAbsences)
+    .where(
+      and(
+        eq(dutyAbsences.year, year),
+        eq(dutyAbsences.week, week),
+        eq(dutyAbsences.memberId, memberId)
+      )
+    );
+  if (absent) {
+    await db.insert(dutyAbsences).values({ year, week, memberId, message });
+  }
 }

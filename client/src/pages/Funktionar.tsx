@@ -46,7 +46,7 @@ export default function Funktionar() {
           </h1>
           <p className="mt-2 text-muted-foreground max-w-2xl">
             Guider, tankning, kvitton och utlägg. Syns bara för dig som är
-            inlagd i plog-, spol- eller spårjouren (och för admin).
+            med i ett rinkjourlag eller spårjouren (och för admin).
           </p>
         </div>
       </section>
@@ -71,7 +71,7 @@ export default function Funktionar() {
         <div className="container py-8">
           <div className="iso-card p-6 text-sm text-muted-foreground max-w-xl">
             Du är inte inlagd i någon jour än. Be en admin koppla ditt konto
-            till plog-, spol- eller spårjouren i schemat, så dyker
+            till ett rinkjourlag eller spårjouren, så dyker
             funktionärsverktygen upp här.
           </div>
         </div>

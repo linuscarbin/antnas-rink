@@ -20,7 +20,7 @@ type Area = "publik" | "alla" | "hockeyrink" | "skidspar";
 const AREA_LABEL: Record<Area, string> = {
   publik: "Alla besökare (Regler & info)",
   alla: "Alla jourhavare",
-  hockeyrink: "Rinken (plog/spol)",
+  hockeyrink: "Rinkjouren",
   skidspar: "Skidspåret",
 };
 
@@ -44,7 +44,7 @@ const TEMPLATES: { title: string; area: Area; body: string }[] = [
   {
     title: "Var ska snön läggas?",
     area: "publik",
-    body: "## Var ska snön?\n\nLägg snön **här**: \n\nInte här: \n\nAnnars blir det svårt för plogjouren nästa gång.\n",
+    body: "## Var ska snön?\n\nLägg snön **här**: \n\nInte här: \n\nAnnars blir det svårt för rinkjouren nästa gång.\n",
   },
   {
     title: "Koppla plogen",

@@ -22,7 +22,7 @@ export async function isFunctionaryFor(
 }
 
 const AREA_LABEL: Record<Area, string> = {
-  hockeyrink: "plog- eller spoljouren",
+  hockeyrink: "rinkjouren",
   skidspar: "spårjouren",
 };
 

@@ -29,7 +29,7 @@ type NavItem = { href: string; label: string; icon: LucideIcon };
 const WINTER_NAV: NavItem[] = [
   { href: "/", label: "Hockeyrink", icon: Snowflake },
   { href: "/skidspar", label: "Skidspår", icon: Trees },
-  { href: "/schema", label: "Schema", icon: CalendarDays },
+  { href: "/schema", label: "Rinkjour", icon: CalendarDays },
   { href: "/boka", label: "Boka", icon: CalendarDays },
   { href: "/anslagstavla", label: "Anslagstavla", icon: MessageSquare },
   { href: "/info", label: "Regler & info", icon: Info },
@@ -42,7 +42,7 @@ const WINTER_TABS: NavItem[] = [
   { href: "/", label: "Rinken", icon: Snowflake },
   { href: "/skidspar", label: "Skidspår", icon: Trees },
   { href: "/anslagstavla", label: "Tavlan", icon: MessageSquare },
-  { href: "/schema", label: "Schema", icon: CalendarDays },
+  { href: "/schema", label: "Rinkjour", icon: CalendarDays },
 ];
 
 const SUMMER_TABS: NavItem[] = [
@@ -101,14 +101,14 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
             </span>
           </Link>
 
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden xl:flex items-center gap-0.5">
             {nav.map((item) => {
               const active = location === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                  className={`whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors ${
                     active
                       ? "bg-accent text-accent-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
@@ -128,28 +128,28 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
             </Link>
             {isFunctionary && (
               <Link href="/funktionar" className="hidden md:block">
-                <Button variant="outline" size="sm" className="bg-card gap-1.5">
+                <Button variant="outline" size="sm" className="bg-card gap-1.5" title="Funktionär" aria-label="Funktionär">
                   <ShieldCheck className="h-4 w-4" />
-                  <span className="hidden sm:inline">Funktionär</span>
+                  <span className="hidden 2xl:inline">Funktionär</span>
                 </Button>
               </Link>
             )}
             {user?.role === "admin" && (
               <Link href="/admin" className="hidden md:block">
-                <Button variant="outline" size="sm" className="bg-card gap-1.5">
+                <Button variant="outline" size="sm" className="bg-card gap-1.5" title="Admin" aria-label="Admin">
                   <LayoutDashboard className="h-4 w-4" />
-                  <span className="hidden sm:inline">Admin</span>
+                  <span className="hidden 2xl:inline">Admin</span>
                 </Button>
               </Link>
             )}
             {isAuthenticated ? (
               <>
                 <Link href="/profil">
-                  <Button variant="ghost" size="sm" className="gap-1.5">
+                  <Button variant="ghost" size="sm" className="gap-1.5" title="Profil" aria-label="Profil">
                     <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/15 text-primary text-xs font-bold">
                       {(user?.name || user?.email || "?").charAt(0).toUpperCase()}
                     </span>
-                    <span className="hidden sm:inline">{user?.name || "Profil"}</span>
+                    <span className="hidden 2xl:inline">{user?.name || "Profil"}</span>
                   </Button>
                 </Link>
                 <Button
@@ -157,9 +157,11 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
                   size="sm"
                   onClick={() => logout()}
                   className="gap-1.5"
+                  title="Logga ut"
+                  aria-label="Logga ut"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:inline">Logga ut</span>
+                  <span className="hidden 2xl:inline">Logga ut</span>
                 </Button>
               </>
             ) : (
@@ -176,7 +178,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
         </div>
 
         {/* Tablet nav (md–lg): compact row */}
-        <nav className="hidden md:block lg:hidden border-t border-border/60 bg-background/90">
+        <nav className="hidden md:block xl:hidden border-t border-border/60 bg-background/90">
           <div className="container flex items-center gap-1 overflow-x-auto py-2">
             {nav.map((item) => {
               const active = location === item.href;

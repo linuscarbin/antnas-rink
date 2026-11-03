@@ -43,7 +43,7 @@ export function useAuth() {
       loading: meQuery.isLoading || logoutMutation.isPending,
       error: meQuery.error ?? logoutMutation.error ?? null,
       isAuthenticated: Boolean(meQuery.data),
-      /** Admin or on plog-/spoljour: may mark the rink, refuel, expenses. */
+      /** Admin or member of a rinkjour team: may mark the rink, refuel, expenses. */
       isRinkFunctionary: Boolean(meQuery.data?.functionary.hockeyrink),
       /** Admin or on spårjour: may mark the ski track, refuel, expenses. */
       isTrackFunctionary: Boolean(meQuery.data?.functionary.skidspar),
