@@ -1,6 +1,7 @@
 import { getIsoWeek } from "@shared/rink";
 import * as db from "./db";
 import { emailLayout, esc, sendEmail } from "./email";
+import { notifyTopic } from "./push";
 
 /**
  * Sends reminder emails to this week's duty holders:
@@ -12,6 +13,7 @@ export async function sendWeeklyDutyReminders(now = new Date()) {
   const { year, week } = getIsoWeek(now);
 
   const recipients: {
+    userId: number;
     email: string;
     role: string;
     name: string;
@@ -30,6 +32,7 @@ export async function sendWeeklyDutyReminders(now = new Date()) {
     const u = await db.getUserById(userId);
     if (u?.email) {
       recipients.push({
+        userId: u.id,
         email: u.email,
         role: roleLabel,
         name: u.name || fallbackName || "",
@@ -76,6 +79,15 @@ export async function sendWeeklyDutyReminders(now = new Date()) {
       html: emailLayout(`Din ${r.role.toLowerCase()} denna vecka`, body),
     });
     if (result.sent) sent++;
+    await notifyTopic(
+      "duty_reminder",
+      {
+        title: `Din ${r.role.toLowerCase()} börjar 📅`,
+        body: `Du har ${r.role.toLowerCase()} vecka ${week}. ${r.area === "rink" ? "Markera plogad/spolad när du är klar." : "Markera draget när du är klar."}`,
+        url: "/funktionar",
+      },
+      { userIds: [r.userId] }
+    ).catch((e) => console.warn("[Push] duty reminder failed", e));
   }
 
   return { ok: true, year, week, recipients: recipients.length, sent };

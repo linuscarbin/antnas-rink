@@ -13,6 +13,7 @@ import PhotoPicker from "@/components/PhotoPicker";
 import { rinkVerdict, trackVerdict } from "@shared/verdict";
 import { Input } from "@/components/ui/input";
 import {
+  Bell,
   CheckCircle2,
   CloudSnow,
   Droplets,
@@ -439,6 +440,19 @@ export default function Home() {
               </p>
             )}
           </div>
+
+          <Link
+            href="/notiser"
+            className="iso-card flex items-center gap-3 p-5 text-sm hover:border-primary/40"
+          >
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <Bell className="h-5 w-5" />
+            </span>
+            <span>
+              <span className="block font-bold">Få notis när isen är nyspolad</span>
+              <span className="text-muted-foreground">Lägg appen på hemskärmen och slå på notiser →</span>
+            </span>
+          </Link>
 
           <Link
             href="/info"

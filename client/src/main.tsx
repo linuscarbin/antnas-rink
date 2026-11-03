@@ -72,3 +72,14 @@ createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </trpc.Provider>
 );
+
+import "./lib/push"; // captures the Android install prompt early
+
+// PWA: register the service worker (push notifications + installable app).
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch((err) => {
+      console.warn("[PWA] service worker registration failed", err);
+    });
+  });
+}

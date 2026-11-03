@@ -44,6 +44,18 @@ export const ENV = {
     process.env.UPLOAD_DIR ??
     (process.env.NODE_ENV === "production" ? "/data/uploads" : "./uploads"),
 
+  // Web Push (VAPID). Optional: keys are generated and stored in the DB if
+  // not provided. Subject should be a mailto: or https: URL.
+  vapid: {
+    publicKey: process.env.VAPID_PUBLIC_KEY ?? "",
+    privateKey: process.env.VAPID_PRIVATE_KEY ?? "",
+    subject: process.env.VAPID_SUBJECT ?? "",
+  },
+
+  // Snow alert to functionaries (cron, Swedish time) and threshold in cm.
+  snowAlertCron: process.env.SNOW_ALERT_CRON ?? "5 7 * * *",
+  snowAlertCm: Number(process.env.SNOW_ALERT_CM ?? 5),
+
   // Cloudflare R2 (S3-compatible) storage for board images.
   r2: {
     accountId: process.env.R2_ACCOUNT_ID ?? "",

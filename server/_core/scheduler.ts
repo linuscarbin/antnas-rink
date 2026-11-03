@@ -2,6 +2,7 @@ import { FEATURES } from "@shared/const";
 import cron from "node-cron";
 import { sendBilbingoReminders } from "../bingoReminder";
 import { sendWeeklyDutyReminders } from "../dutyReminder";
+import { runSnowAlert } from "../snowAlert";
 import { ENV } from "./env";
 
 let started = false;
@@ -15,40 +16,45 @@ export function startScheduler() {
   if (started) return;
   started = true;
 
-  const expr = ENV.dutyReminderCron?.trim();
+  schedule("Duty reminder", ENV.dutyReminderCron, "DUTY_REMINDER_CRON", sendWeeklyDutyReminders);
+  schedule("Snow alert", ENV.snowAlertCron, "SNOW_ALERT_CRON", runSnowAlert);
+  if (FEATURES.bilbingo) {
+    schedule(
+      "Bilbingo reminder",
+      ENV.bingoReminderCron || "0 17 * * *",
+      "BINGO_REMINDER_CRON",
+      sendBilbingoReminders
+    );
+  }
+}
+
+/** Schedules one job; empty expression disables it. Jobs run in Swedish time. */
+function schedule(
+  name: string,
+  expression: string | undefined,
+  envName: string,
+  job: () => Promise<unknown>
+) {
+  const expr = expression?.trim();
   if (!expr) {
-    console.log("[Scheduler] Duty reminder disabled (DUTY_REMINDER_CRON empty).");
+    console.log(`[Scheduler] ${name} disabled (${envName} empty).`);
     return;
   }
-
   if (!cron.validate(expr)) {
-    console.warn(`[Scheduler] Invalid DUTY_REMINDER_CRON "${expr}" — skipping.`);
+    console.warn(`[Scheduler] Invalid ${envName} "${expr}" — skipping.`);
     return;
   }
-
-  cron.schedule(expr, async () => {
-    try {
-      const result = await sendWeeklyDutyReminders();
-      console.log("[Scheduler] Duty reminders run:", JSON.stringify(result));
-    } catch (error) {
-      console.error("[Scheduler] Duty reminder failed:", error);
-    }
-  });
-
-  console.log(`[Scheduler] Duty reminder scheduled with cron "${expr}".`);
-
-  // Bilbingo reminders: run daily at 17:00 server time, emailing funktionärer
-  // and kvällsansvarig the day before each occasion. Configurable via env.
-  const bingoExpr = (ENV.bingoReminderCron || "0 17 * * *").trim();
-  if (FEATURES.bilbingo && bingoExpr && cron.validate(bingoExpr)) {
-    cron.schedule(bingoExpr, async () => {
+  cron.schedule(
+    expr,
+    async () => {
       try {
-        const result = await sendBilbingoReminders();
-        console.log("[Scheduler] Bilbingo reminders run:", JSON.stringify(result));
+        const result = await job();
+        console.log(`[Scheduler] ${name} run:`, JSON.stringify(result));
       } catch (error) {
-        console.error("[Scheduler] Bilbingo reminder failed:", error);
+        console.error(`[Scheduler] ${name} failed:`, error);
       }
-    });
-    console.log(`[Scheduler] Bilbingo reminder scheduled with cron "${bingoExpr}".`);
-  }
+    },
+    { timezone: "Europe/Stockholm" }
+  );
+  console.log(`[Scheduler] ${name} scheduled with cron "${expr}".`);
 }

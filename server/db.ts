@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, gte, lt, lte, ne, or } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, like, lt, lte, ne, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { findBookingConflicts, type Zone } from "@shared/rink";
 import {
@@ -11,6 +11,8 @@ import {
   InsertCheckin,
   guides,
   InsertGuide,
+  pushSubscriptions,
+  InsertPushSubscription,
   contacts,
   dutySchedule,
   efforts,
@@ -981,4 +983,77 @@ export async function updateGuide(id: number, data: Partial<InsertGuide>) {
 export async function deleteGuide(id: number) {
   const db = await requireDb();
   await db.delete(guides).where(eq(guides.id, id));
+}
+
+/* --------------------------- Push subscriptions --------------------------- */
+
+export async function upsertPushSubscription(data: InsertPushSubscription) {
+  const db = await requireDb();
+  await db
+    .insert(pushSubscriptions)
+    .values(data)
+    .onDuplicateKeyUpdate({
+      set: {
+        p256dh: data.p256dh,
+        auth: data.auth,
+        userId: data.userId ?? null,
+        topics: data.topics ?? "",
+      },
+    });
+}
+
+export async function getPushSubscription(endpoint: string) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(pushSubscriptions)
+    .where(eq(pushSubscriptions.endpoint, endpoint))
+    .limit(1);
+  return rows[0];
+}
+
+export async function deletePushSubscription(endpoint: string) {
+  const db = await requireDb();
+  await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+}
+
+/** Subscriptions for a topic, optionally limited to some users. */
+export async function listPushSubscriptions(topic: string, userIds?: number[]) {
+  const db = await requireDb();
+  const topicMatch = like(pushSubscriptions.topics, `%,${topic},%`);
+  if (userIds) {
+    if (userIds.length === 0) return [];
+    return db
+      .select()
+      .from(pushSubscriptions)
+      .where(and(topicMatch, inArray(pushSubscriptions.userId, userIds)));
+  }
+  return db.select().from(pushSubscriptions).where(topicMatch);
+}
+
+/** User ids that are functionaries for an area (on duty this or last year). */
+export async function listFunctionaryUserIds(
+  area: "hockeyrink" | "skidspar"
+): Promise<number[]> {
+  const db = await requireDb();
+  const minYear = new Date().getFullYear() - 1;
+  const ids = new Set<number>();
+  if (area === "hockeyrink") {
+    const rows = await db
+      .select({ a: dutySchedule.plogjourUserId, b: dutySchedule.spoljourUserId })
+      .from(dutySchedule)
+      .where(gte(dutySchedule.year, minYear));
+    rows.forEach((r) => {
+      if (r.a) ids.add(r.a);
+      if (r.b) ids.add(r.b);
+    });
+  } else {
+    const rows = await db
+      .select({ a: skiDutySchedule.sparjourUserId })
+      .from(skiDutySchedule)
+      .where(gte(skiDutySchedule.year, minYear));
+    rows.forEach((r) => r.a && ids.add(r.a));
+  }
+  (await listAdmins()).forEach((a) => ids.add(a.id));
+  return Array.from(ids);
 }
