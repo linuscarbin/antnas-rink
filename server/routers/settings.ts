@@ -1,3 +1,4 @@
+import { FEATURES } from "@shared/const";
 import { z } from "zod";
 import * as db from "../db";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
@@ -25,6 +26,8 @@ export const settingsRouter = router({
 
   // Public: read the active season (defaults to "vinter").
   getSeason: publicProcedure.query(async () => {
+    // Summer mode only exists for bilbingo; without it the site is always winter.
+    if (!FEATURES.bilbingo) return { season: "vinter" } as const;
     const row = await db.getSetting(SEASON_KEY);
     const season = row?.settingValue === "sommar" ? "sommar" : "vinter";
     return { season } as const;

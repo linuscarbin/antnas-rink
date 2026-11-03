@@ -1,3 +1,4 @@
+import { FEATURES } from "@shared/const";
 import cron from "node-cron";
 import { sendBilbingoReminders } from "../bingoReminder";
 import { sendWeeklyDutyReminders } from "../dutyReminder";
@@ -39,7 +40,7 @@ export function startScheduler() {
   // Bilbingo reminders: run daily at 17:00 server time, emailing funktionärer
   // and kvällsansvarig the day before each occasion. Configurable via env.
   const bingoExpr = (ENV.bingoReminderCron || "0 17 * * *").trim();
-  if (bingoExpr && cron.validate(bingoExpr)) {
+  if (FEATURES.bilbingo && bingoExpr && cron.validate(bingoExpr)) {
     cron.schedule(bingoExpr, async () => {
       try {
         const result = await sendBilbingoReminders();

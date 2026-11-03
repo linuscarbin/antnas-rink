@@ -168,7 +168,7 @@ export const bookings = mysqlTable("bookings", {
   /** Title/purpose, e.g. "Ishockeyträning". */
   title: varchar("title", { length: 160 }).notNull(),
   /** Zone: exactly "full rink", "one end", or "half rink". */
-  zone: mysqlEnum("zone", ["full rink", "one end", "half rink"]).notNull(),
+  zone: mysqlEnum("zone", ["full rink", "half rink"]).notNull(),
   /** Start time (UTC ms stored as timestamp). */
   startTime: timestamp("startTime").notNull(),
   /** End time. */

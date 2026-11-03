@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "../db";
-import { emailLayout, sendEmail } from "../email";
+import { emailLayout, esc, sendEmail } from "../email";
 import {
   adminProcedure,
   protectedProcedure,
@@ -71,9 +71,9 @@ export const skiDutyRouter = router({
           .map((a) => a.email)
           .filter((e): e is string => Boolean(e));
         const body = `
-          <p><strong>${reporter}</strong> har anmält förhinder för sin spårjour (skidspåret).</p>
+          <p><strong>${esc(reporter)}</strong> har anmält förhinder för sin spårjour (skidspåret).</p>
           <p>Vecka ${updated.week}, ${updated.year}.</p>
-          ${input.message ? `<p>Meddelande: ${input.message}</p>` : ""}
+          ${input.message ? `<p>Meddelande: ${esc(input.message)}</p>` : ""}
           <p>Logga in i adminpanelen för att hitta en ersättare.</p>
         `;
         await sendEmail({

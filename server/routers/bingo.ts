@@ -5,10 +5,23 @@ import { distributeShifts } from "@shared/bingo";
 import { sendBilbingoReminders } from "../bingoReminder";
 import * as db from "../db";
 import {
-  adminProcedure,
-  publicProcedure,
+  adminProcedure as baseAdminProcedure,
+  middleware,
+  publicProcedure as basePublicProcedure,
   router,
 } from "../_core/trpc";
+import { FEATURES } from "@shared/const";
+
+// When bilbingo is switched off, every endpoint (incl. the public team links)
+// answers NOT_FOUND.
+const featureGate = middleware(({ next }) => {
+  if (!FEATURES.bilbingo) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Bilbingo är avstängt." });
+  }
+  return next();
+});
+const publicProcedure = basePublicProcedure.use(featureGate);
+const adminProcedure = baseAdminProcedure.use(featureGate);
 
 function parseUnavailable(csv: string | null): number[] {
   if (!csv) return [];
@@ -79,7 +92,8 @@ export const bingoRouter = router({
     }),
 
   /* ----- Teams ----- */
-  listTeams: publicProcedure.query(async () => db.listTeams()),
+  // Admin only: rows include the secret shareToken for the fill-in links.
+  listTeams: adminProcedure.query(async () => db.listTeams()),
 
   createTeam: adminProcedure
     .input(z.object({ name: z.string().min(1).max(160) }))

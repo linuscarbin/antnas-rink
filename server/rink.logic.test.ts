@@ -1,37 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { getIsoWeek, ZONES, ZONE_LABELS } from "../shared/rink";
+import {
+  findBookingConflicts,
+  getIsoWeek,
+  ZONES,
+  ZONE_LABELS,
+  type BookingSlot,
+} from "../shared/rink";
 
-/**
- * Pure re-implementation of the zone/overlap conflict rule used by
- * findConflictingBookings, so we can unit-test the logic without a DB.
- */
-type Zone = (typeof ZONES)[number];
-type B = { id: number; start: number; end: number; zone: Zone };
-
-function overlaps(aStart: number, aEnd: number, bStart: number, bEnd: number) {
-  // strict: back-to-back (edge-touching) does NOT overlap
-  return bStart < aEnd && bEnd > aStart;
-}
-
-function conflicts(
-  existing: B[],
-  newStart: number,
-  newEnd: number,
-  zone: Zone
-): B[] {
-  return existing.filter((b) => {
-    if (!overlaps(newStart, newEnd, b.start, b.end)) return false;
-    if (b.zone === "full rink" || zone === "full rink") return true;
-    return b.zone === zone;
-  });
-}
-
+type B = BookingSlot;
 const h = (n: number) => n * 3600 * 1000;
+const conflicts = findBookingConflicts;
 
-describe("booking overlap rule", () => {
+describe("booking conflict rule (shared/rink.ts)", () => {
   it("allows back-to-back bookings (edge touching)", () => {
     const existing: B[] = [{ id: 1, start: h(18), end: h(19), zone: "full rink" }];
-    // new booking 19-20 starts exactly when previous ends → no conflict
     expect(conflicts(existing, h(19), h(20), "full rink")).toHaveLength(0);
   });
 
@@ -40,20 +22,33 @@ describe("booking overlap rule", () => {
     expect(conflicts(existing, h(19), h(21), "full rink")).toHaveLength(1);
   });
 
-  it("full rink blocks any zone during overlap", () => {
-    const existing: B[] = [{ id: 1, start: h(18), end: h(20), zone: "full rink" }];
-    expect(conflicts(existing, h(19), h(21), "one end")).toHaveLength(1);
-    expect(conflicts(existing, h(19), h(21), "half rink")).toHaveLength(1);
+  it("full rink blocks a half, and a half blocks full rink", () => {
+    const full: B[] = [{ id: 1, start: h(18), end: h(20), zone: "full rink" }];
+    expect(conflicts(full, h(19), h(21), "half rink")).toHaveLength(1);
+    const half: B[] = [{ id: 1, start: h(18), end: h(20), zone: "half rink" }];
+    expect(conflicts(half, h(19), h(21), "full rink")).toHaveLength(1);
   });
 
-  it("different zones do not conflict (one end vs half rink)", () => {
-    const existing: B[] = [{ id: 1, start: h(18), end: h(20), zone: "one end" }];
+  it("two halves can be booked at the same time", () => {
+    const existing: B[] = [{ id: 1, start: h(18), end: h(20), zone: "half rink" }];
     expect(conflicts(existing, h(18), h(20), "half rink")).toHaveLength(0);
   });
 
-  it("same non-full zone conflicts on overlap", () => {
-    const existing: B[] = [{ id: 1, start: h(18), end: h(20), zone: "one end" }];
-    expect(conflicts(existing, h(19), h(21), "one end")).toHaveLength(1);
+  it("a third half is rejected", () => {
+    const existing: B[] = [
+      { id: 1, start: h(18), end: h(20), zone: "half rink" },
+      { id: 2, start: h(19), end: h(21), zone: "half rink" },
+    ];
+    expect(conflicts(existing, h(19), h(20), "half rink")).not.toHaveLength(0);
+  });
+
+  it("two halves that don't overlap each other leave room for one more", () => {
+    // 18-19 and 19-20 never coexist, so a new 18-20 half fits.
+    const existing: B[] = [
+      { id: 1, start: h(18), end: h(19), zone: "half rink" },
+      { id: 2, start: h(19), end: h(20), zone: "half rink" },
+    ];
+    expect(conflicts(existing, h(18), h(20), "half rink")).toHaveLength(0);
   });
 
   it("non-overlapping times never conflict", () => {
@@ -63,8 +58,8 @@ describe("booking overlap rule", () => {
 });
 
 describe("zone labels and constants", () => {
-  it("keeps exact required zone keys", () => {
-    expect(ZONES).toEqual(["full rink", "one end", "half rink"]);
+  it("has exactly whole rink and half rink", () => {
+    expect(ZONES).toEqual(["full rink", "half rink"]);
   });
   it("has a Swedish label for each zone", () => {
     for (const z of ZONES) {

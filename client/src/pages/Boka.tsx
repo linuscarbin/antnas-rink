@@ -29,7 +29,6 @@ function toLocalInputValue(d: Date) {
 
 const ZONE_COLOR: Record<Zone, string> = {
   "full rink": "oklch(0.6 0.17 250)",
-  "one end": "oklch(0.7 0.18 25)",
   "half rink": "oklch(0.72 0.13 184)",
 };
 
@@ -206,19 +205,28 @@ export default function Boka() {
                     <SelectContent>
                       {ZONES.map((z) => (
                         <SelectItem key={z} value={z}>
-                          {ZONE_LABELS[z]} ({z})
+                          {ZONE_LABELS[z]}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Start</Label>
                     <Input
                       type="datetime-local"
                       value={start}
-                      onChange={(e) => setStart(e.target.value)}
+                      onChange={(e) => {
+                        // Keep the same duration when moving the start time.
+                        const prevStart = new Date(start).getTime();
+                        const prevEnd = new Date(end).getTime();
+                        const next = new Date(e.target.value).getTime();
+                        setStart(e.target.value);
+                        if (!Number.isNaN(next) && prevEnd > prevStart) {
+                          setEnd(toLocalInputValue(new Date(next + (prevEnd - prevStart))));
+                        }
+                      }}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -270,7 +278,6 @@ export default function Boka() {
                       style={{ background: ZONE_COLOR[z] }}
                     />
                     <span className="font-semibold">{ZONE_LABELS[z]}</span>
-                    <span className="text-muted-foreground">({z})</span>
                   </div>
                 ))}
               </div>
