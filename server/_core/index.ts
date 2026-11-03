@@ -6,6 +6,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { startScheduler } from "./scheduler";
+import { runMigrations } from "./migrate";
 import { registerRefuelExport } from "./refuelExport";
 import { registerUploads } from "./uploads";
 import { serveStatic, setupVite } from "./vite";
@@ -30,7 +31,11 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  await runMigrations();
+
   const app = express();
+  // Behind Coolify's reverse proxy (Traefik/Caddy): trust X-Forwarded-* headers.
+  app.set("trust proxy", 1);
   const server = createServer(app);
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ limit: "10mb", extended: true }));

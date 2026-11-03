@@ -65,6 +65,8 @@ Det **första kontot som registreras blir automatiskt administratör** (ägare).
 | `R2_BUCKET` | Nej* | R2 bucket-namn för bilder |
 | `R2_PUBLIC_URL` | Nej* | Publik URL där bucketen serveras via din domän, t.ex. `https://media.dindoman.se` |
 | `R2_ENDPOINT` | Nej | Explicit S3-endpoint (annars härleds från account-id) |
+| `RUN_MIGRATIONS` | Nej | Kör DB-migreringar automatiskt vid start. Standard på; `false` = av |
+| `TZ` | Nej | Tidszon för cron-påminnelser. Docker-imagen sätter `Europe/Stockholm` |
 | `UPLOAD_DIR` | Nej | Disk-fallback för bilder när R2 *inte* används. Standard `/data/uploads` |
 
 \* R2-bilder: ange alla `R2_*` (utom valfri endpoint) för att lagra bilder i Cloudflare R2. Utan dem används disk (`UPLOAD_DIR`).
@@ -82,14 +84,10 @@ Det **första kontot som registreras blir automatiskt administratör** (ägare).
    `NODE_ENV=production`. Lägg till `RESEND_API_KEY` för e-post.
 4. **Port:** Containern lyssnar på `PORT` (default 3000). Låt Coolifys proxy peka
    dit och aktivera HTTPS/domän.
-5. **Migrera databasen:** Kör en gång `pnpm db:push` mot din databas. Kör detta
-   **lokalt** (eller från valfri maskin med dev-beroenden installerade) med
-   produktionens `DATABASE_URL` satt i miljön:
-   ```bash
-   DATABASE_URL="mysql://..." pnpm db:push
-   ```
-   (Produktions-imagen är avsiktligt slimmad och innehåller inte dev-verktyget
-   `drizzle-kit`, så migrering körs utanför containern.)
+5. **Databasmigrering sker automatiskt:** Vid varje start kör appen alla
+   väntande migreringar i `drizzle/` mot `DATABASE_URL` (med omförsök om
+   databasen inte är uppe än). Inget manuellt `pnpm db:push` behövs. Stäng av
+   med `RUN_MIGRATIONS=false` om du vill migrera manuellt.
 6. **Starta:** Deploya. Appen serverar både frontend och API på samma port.
    Den self-hostade schemaläggaren startar automatiskt.
 7. **Första kontot:** Gå till `/login`, välj *Skapa konto* och registrera dig —

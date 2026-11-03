@@ -30,6 +30,8 @@ FROM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production
 # The server picks PORT from env; Coolify sets it automatically.
 ENV PORT=3000
+# Cron reminders (node-cron) run in server local time.
+ENV TZ=Europe/Stockholm
 
 WORKDIR /app
 
