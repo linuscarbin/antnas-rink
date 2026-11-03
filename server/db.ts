@@ -1187,3 +1187,9 @@ export async function setAbsence(
 export async function getAreaDuty(area: DutyArea, year: number, week: number) {
   return area === "hockeyrink" ? getDuty(year, week) : getSkiDuty(year, week);
 }
+
+export async function getGuide(id: number) {
+  const db = await requireDb();
+  const rows = await db.select().from(guides).where(eq(guides.id, id)).limit(1);
+  return rows[0];
+}

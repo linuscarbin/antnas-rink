@@ -1,28 +1,12 @@
+import GuideEditor, { GUIDE_AREA_LABEL, type GuideArea, type GuideDraft } from "@/components/GuideEditor";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
-import { ImagePlus, Loader2, Pencil, Plus, Save, Trash2, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { Pencil, Plus } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
-type Area = "publik" | "alla" | "hockeyrink" | "skidspar";
-
-const AREA_LABEL: Record<Area, string> = {
-  publik: "Alla besökare (Regler & info)",
-  alla: "Alla jourhavare",
-  hockeyrink: "Rinkjouren",
-  skidspar: "Skidspåret",
-};
+type Area = GuideArea;
 
 /** Starter templates so admins don't face an empty page. */
 const TEMPLATES: { title: string; area: Area; body: string }[] = [
@@ -73,149 +57,89 @@ const TEMPLATES: { title: string; area: Area; body: string }[] = [
   },
 ];
 
-type Draft = { id?: number; title: string; area: Area; body: string; sortOrder: number };
-
-const EMPTY: Draft = { title: "", area: "alla", body: "", sortOrder: 0 };
+const ALL_AREAS: Area[] = ["publik", "alla", "hockeyrink", "skidspar"];
 
 export default function AdminGuides() {
   const utils = trpc.useUtils();
   const listQuery = trpc.guides.adminList.useQuery();
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const [draft, setDraft] = useState<GuideDraft | null>(null);
 
   const done = (msg: string) => {
     utils.guides.adminList.invalidate();
     utils.guides.list.invalidate();
+    utils.guides.publicList.invalidate();
     setDraft(null);
     toast.success(msg);
   };
-  const create = trpc.guides.create.useMutation({
-    onSuccess: () => done("Guiden är sparad."),
-    onError: (e) => toast.error(e.message),
-  });
-  const update = trpc.guides.update.useMutation({
-    onSuccess: () => done("Guiden är uppdaterad."),
-    onError: (e) => toast.error(e.message),
-  });
-  const remove = trpc.guides.delete.useMutation({
-    onSuccess: () => done("Guiden är borttagen."),
-    onError: (e) => toast.error(e.message),
-  });
+  const onError = (e: { message: string }) => toast.error(e.message);
+  const create = trpc.guides.create.useMutation({ onSuccess: () => done("Guiden är sparad."), onError });
+  const update = trpc.guides.update.useMutation({ onSuccess: () => done("Guiden är uppdaterad."), onError });
+  const remove = trpc.guides.delete.useMutation({ onSuccess: () => done("Guiden är borttagen."), onError });
 
-  function save() {
-    if (!draft) return;
-    if (!draft.title.trim()) return toast.error("Ange en rubrik.");
-    const data = { title: draft.title, area: draft.area, body: draft.body, sortOrder: draft.sortOrder };
-    if (draft.id) update.mutate({ id: draft.id, ...data });
+  function save(d: GuideDraft) {
+    const data = { title: d.title, area: d.area, body: d.body, sortOrder: d.sortOrder };
+    if (d.id) update.mutate({ id: d.id, ...data });
     else create.mutate(data);
   }
 
-  async function insertImage(file: File) {
-    setUploading(true);
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      const resp = await fetch("/api/upload", { method: "POST", body: form, credentials: "include" });
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(data.error || "Uppladdning misslyckades.");
-      const md = `\n![${file.name.replace(/\.[^.]+$/, "")}](${data.url})\n`;
-      setDraft((d) => {
-        if (!d) return d;
-        const el = bodyRef.current;
-        const pos = el ? el.selectionStart : d.body.length;
-        return { ...d, body: d.body.slice(0, pos) + md + d.body.slice(pos) };
-      });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Uppladdning misslyckades.");
-    } finally {
-      setUploading(false);
-    }
-  }
-
   const guides = listQuery.data ?? [];
-  const pending = create.isPending || update.isPending;
+  const unusedTemplates = TEMPLATES.filter((t) => !guides.some((g) => g.title === t.title));
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
-      <div className="iso-card p-6">
+      <div className="iso-card p-6 h-fit">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-extrabold">Guider för jourhavare</h2>
-          <Button size="sm" onClick={() => setDraft({ ...EMPTY })} className="gap-1">
+          <h2 className="text-lg font-extrabold">Guider & tips</h2>
+          <Button
+            size="sm"
+            onClick={() => setDraft({ title: "", area: "alla", body: "", sortOrder: guides.length })}
+            className="gap-1"
+          >
             <Plus className="h-4 w-4" /> Ny guide
           </Button>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Syns bara för admin och de som är inlagda i jourschemat för området.
-          Bra för förrådskod, hur man kopplar plogen, var man fyller vatten och
-          viktiga kontakter.
+          Jourhavare kan också skriva egna guider och tips under Funktionär. Här
+          kan du ändra eller ta bort alla.
         </p>
 
         {listQuery.isLoading ? (
           <Skeleton className="mt-4 h-24" />
         ) : guides.length === 0 ? (
-          <div className="mt-4">
-            <p className="text-sm text-muted-foreground">Inga guider ännu. Börja från en mall:</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {TEMPLATES.map((t) => (
-                <Button
-                  key={t.title}
-                  size="sm"
-                  variant="outline"
-                  className="bg-card"
-                  onClick={() => setDraft({ ...t, sortOrder: 0 })}
-                >
-                  {t.title}
-                </Button>
-              ))}
-            </div>
-          </div>
+          <p className="mt-4 text-sm text-muted-foreground">Inga guider ännu. Börja från en mall nedan.</p>
         ) : (
           <ul className="mt-4 divide-y divide-border">
             {guides.map((g) => (
-              <li key={g.id} className="flex items-center gap-2 py-2.5">
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold truncate">{g.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {AREA_LABEL[g.area]}
-                    {g.updatedByName ? ` · senast ändrad av ${g.updatedByName}` : ""}
-                  </div>
-                </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label="Redigera"
+              <li key={g.id}>
+                <button
+                  className="flex w-full items-center gap-2 py-2.5 text-left hover:bg-accent/40"
                   onClick={() =>
                     setDraft({ id: g.id, title: g.title, area: g.area, body: g.body, sortOrder: g.sortOrder })
                   }
                 >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label="Ta bort"
-                  onClick={() => {
-                    if (confirm(`Ta bort guiden "${g.title}"?`)) remove.mutate({ id: g.id });
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold">{g.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {GUIDE_AREA_LABEL[g.area]}
+                      {g.updatedByName ? ` · ${g.updatedByName}` : ""}
+                    </div>
+                  </div>
+                  <Pencil className="h-4 w-4 text-muted-foreground" />
+                </button>
               </li>
             ))}
           </ul>
         )}
-        {guides.length > 0 && (
+        {unusedTemplates.length > 0 && (
           <div className="mt-4">
-            <p className="text-xs text-muted-foreground">Fler mallar:</p>
+            <p className="text-xs font-semibold text-muted-foreground">Mallar:</p>
             <div className="mt-1 flex flex-wrap gap-1.5">
-              {TEMPLATES.filter((t) => !guides.some((g) => g.title === t.title)).map((t) => (
+              {unusedTemplates.map((t) => (
                 <Button
                   key={t.title}
                   size="sm"
-                  variant="ghost"
-                  className="h-7 text-xs"
+                  variant="outline"
+                  className="h-7 bg-card text-xs"
                   onClick={() => setDraft({ ...t, sortOrder: guides.length })}
                 >
                   + {t.title}
@@ -227,91 +151,23 @@ export default function AdminGuides() {
       </div>
 
       {draft && (
-        <div className="iso-card p-6">
-          <div className="flex items-center justify-between">
-            <h3 className="font-extrabold">{draft.id ? "Redigera guide" : "Ny guide"}</h3>
-            <Button size="icon" variant="ghost" aria-label="Stäng" onClick={() => setDraft(null)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="mt-3 grid gap-3">
-            <div className="grid gap-1.5">
-              <Label>Rubrik</Label>
-              <Input
-                value={draft.title}
-                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                placeholder="T.ex. Koppla plogen"
-              />
-            </div>
-            <div className="grid grid-cols-[1fr_auto] gap-3">
-              <div className="grid gap-1.5">
-                <Label>Vem ser guiden?</Label>
-                <Select value={draft.area} onValueChange={(v) => setDraft({ ...draft, area: v as Area })}>
-                  <SelectTrigger className="bg-card">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(AREA_LABEL) as Area[]).map((a) => (
-                      <SelectItem key={a} value={a}>
-                        {AREA_LABEL[a]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-1.5">
-                <Label>Ordning</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  className="w-20"
-                  value={draft.sortOrder}
-                  onChange={(e) => setDraft({ ...draft, sortOrder: Number(e.target.value) || 0 })}
-                />
-              </div>
-            </div>
-            <div className="grid gap-1.5">
-              <div className="flex items-center justify-between">
-                <Label>Innehåll</Label>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-card h-7 gap-1 text-xs"
-                  disabled={uploading}
-                  onClick={() => fileRef.current?.click()}
-                >
-                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
-                  Infoga bild
-                </Button>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) insertImage(f);
-                    e.target.value = "";
-                  }}
-                />
-              </div>
-              <Textarea
-                ref={bodyRef}
-                value={draft.body}
-                onChange={(e) => setDraft({ ...draft, body: e.target.value })}
-                rows={14}
-                className="font-mono text-sm"
-              />
-              <p className="text-xs text-muted-foreground">
-                Formatering: <code>## Rubrik</code>, <code>**fet**</code>, <code>- punkt</code>,{" "}
-                <code>1. steg</code>, länk till telefon: <code>[070-123 45 67](tel:0701234567)</code>.
-                Skriv koder som text – inte i bilder (bilder kan nås av den som har länken).
-              </p>
-            </div>
-            <Button onClick={save} disabled={pending} className="gap-1.5">
-              <Save className="h-4 w-4" /> Spara guide
-            </Button>
-          </div>
+        <div className="iso-card p-6 h-fit">
+          <h3 className="mb-3 font-extrabold">{draft.id ? "Redigera guide" : "Ny guide"}</h3>
+          <GuideEditor
+            key={draft.id ?? `new-${draft.title}`}
+            draft={draft}
+            areas={ALL_AREAS}
+            saving={create.isPending || update.isPending}
+            onSave={save}
+            onCancel={() => setDraft(null)}
+            onDelete={
+              draft.id
+                ? () => {
+                    if (confirm(`Ta bort "${draft.title}"?`)) remove.mutate({ id: draft.id! });
+                  }
+                : undefined
+            }
+          />
         </div>
       )}
     </div>

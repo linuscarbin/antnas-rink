@@ -418,6 +418,8 @@ export const guides = mysqlTable("guides", {
   /** Markdown body. */
   body: text("body").notNull(),
   sortOrder: int("sortOrder").default(0).notNull(),
+  /** Author (functionaries may edit their own guides; admins all). */
+  createdByUserId: int("createdByUserId"),
   updatedByName: varchar("updatedByName", { length: 120 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

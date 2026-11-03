@@ -1,0 +1,1 @@
+ALTER TABLE `guides` ADD `createdByUserId` int;

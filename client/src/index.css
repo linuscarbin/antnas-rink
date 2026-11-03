@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Streamdown (guide/markdown rendering) styles lists, headings etc. with
+   Tailwind classes inside its own bundle – let Tailwind see them. */
+@source "../../node_modules/streamdown/dist/*.js";
 
 @custom-variant dark (&:is(.dark *));
 
