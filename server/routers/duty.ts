@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "../db";
+import { rotateTeams } from "@shared/rink";
 import { emailLayout, esc, sendEmail } from "../email";
 import { notifyConflict } from "../push";
 import {
@@ -19,6 +20,7 @@ const dutyInput = z.object({
   spoljourName: z.string().max(120).optional().nullable(),
   spoljourPhone: z.string().max(40).optional().nullable(),
   spoljourUserId: z.number().int().optional().nullable(),
+  teamId: z.number().int().optional().nullable(),
   note: z.string().max(500).optional().nullable(),
 });
 
@@ -38,6 +40,33 @@ export const dutyRouter = router({
       spoljourConflict: false,
     });
   }),
+
+  // Admin: assign teams in rotation over a range of weeks (across new year).
+  rotate: adminProcedure
+    .input(
+      z.object({
+        from: z.object({ year: z.number().int(), week: z.number().int().min(1).max(53) }),
+        to: z.object({ year: z.number().int(), week: z.number().int().min(1).max(53) }),
+        teamIds: z.array(z.number().int()).min(1).max(20),
+        startIndex: z.number().int().min(0).default(0),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const plan = rotateTeams(input.from, input.to, input.teamIds, input.startIndex);
+      if (!plan.length) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Slutveckan måste vara efter startveckan." });
+      }
+      for (const p of plan) {
+        const existing = await db.getDuty(p.year, p.week);
+        await db.upsertDuty({
+          year: p.year,
+          week: p.week,
+          teamId: p.teamId,
+          note: existing?.note ?? null,
+        });
+      }
+      return { weeks: plan.length };
+    }),
 
   // Admin: delete a week's duty row.
   delete: adminProcedure

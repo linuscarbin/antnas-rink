@@ -36,7 +36,13 @@ export async function runSnowAlert(now = new Date()) {
 
   const { year, week } = getIsoWeek(now);
   const duty = await db.getDuty(year, week);
-  const who = duty?.plogjourName ? ` Veckans plogjour: ${duty.plogjourName}.` : "";
+  let who = "";
+  if (duty?.teamId) {
+    const team = (await db.listRinkTeams()).find((t) => t.id === duty.teamId);
+    if (team) who = ` Veckans rinkjour: ${team.name}.`;
+  } else if (duty?.plogjourName) {
+    who = ` Veckans rinkjour: ${duty.plogjourName}.`;
+  }
   const result = await notifyTopic("snow_alert", {
     title: `❄️ ${cm} cm snö senaste dygnet`,
     body: `Rinken behöver troligen plogas.${who}`,

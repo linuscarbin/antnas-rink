@@ -113,6 +113,27 @@
       "when": 1793733539155,
       "tag": "0015_futuristic_shinko_yamashiro",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1793735170548,
+      "tag": "0016_violet_warstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1793735797934,
+      "tag": "0017_burly_wolf_cub",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1793736314371,
+      "tag": "0018_nosy_leech",
+      "breakpoints": true
     }
   ]
 }

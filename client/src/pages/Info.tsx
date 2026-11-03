@@ -2,7 +2,7 @@ import SiteLayout from "@/components/SiteLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { ChevronDown, Info as InfoIcon } from "lucide-react";
-import { Streamdown } from "streamdown";
+import GuideBody from "@/components/GuideBody";
 
 /** Public rules & tips: ordningsregler, ställa bort målen, var snön ska ligga… */
 export default function Info() {
@@ -37,8 +37,8 @@ export default function Info() {
                   {g.title}
                   <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
                 </summary>
-                <div className="prose prose-sm max-w-none px-5 pb-5">
-                  <Streamdown>{g.body}</Streamdown>
+                <div className="px-5 pb-5">
+                  <GuideBody body={g.body} />
                 </div>
               </details>
             ))}

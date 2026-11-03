@@ -78,6 +78,8 @@ export const dutySchedule = mysqlTable("dutySchedule", {
   spoljourPhone: varchar("spoljourPhone", { length: 40 }),
   spoljourUserId: int("spoljourUserId"),
   spoljourConflict: boolean("spoljourConflict").default(false).notNull(),
+  /** Rinkjour team assigned to this week (replaces plog-/spoljour). */
+  teamId: int("teamId"),
   note: text("note"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -128,6 +130,8 @@ export const skiDutySchedule = mysqlTable("skiDutySchedule", {
   sparjourPhone: varchar("sparjourPhone", { length: 40 }),
   sparjourUserId: int("sparjourUserId"),
   sparjourConflict: boolean("sparjourConflict").default(false).notNull(),
+  /** Spårjour team assigned to this week. */
+  teamId: int("teamId"),
   note: text("note"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -414,6 +418,8 @@ export const guides = mysqlTable("guides", {
   /** Markdown body. */
   body: text("body").notNull(),
   sortOrder: int("sortOrder").default(0).notNull(),
+  /** Author (functionaries may edit their own guides; admins all). */
+  createdByUserId: int("createdByUserId"),
   updatedByName: varchar("updatedByName", { length: 120 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -440,3 +446,43 @@ export const pushSubscriptions = mysqlTable("pushSubscriptions", {
 
 export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
+
+/**
+ * Duty teams ("jourlag") rotating week by week — for the rink (rinkjour) or
+ * the ski track (spårjour). Table name kept from when only the rink had teams.
+ */
+export const rinkTeams = mysqlTable("rinkTeams", {
+  id: int("id").autoincrement().primaryKey(),
+  area: mysqlEnum("area", ["hockeyrink", "skidspar"]).default("hockeyrink").notNull(),
+  name: varchar("name", { length: 80 }).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RinkTeam = typeof rinkTeams.$inferSelect;
+export type InsertRinkTeam = typeof rinkTeams.$inferInsert;
+
+/** Members of a rinkjour team. userId links an account (functionary access). */
+export const rinkTeamMembers = mysqlTable("rinkTeamMembers", {
+  id: int("id").autoincrement().primaryKey(),
+  teamId: int("teamId").notNull(),
+  userId: int("userId"),
+  name: varchar("name", { length: 120 }).notNull(),
+  phone: varchar("phone", { length: 40 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RinkTeamMember = typeof rinkTeamMembers.$inferSelect;
+export type InsertRinkTeamMember = typeof rinkTeamMembers.$inferInsert;
+
+/** "Förhinder": a team member can't do their team's week. */
+export const dutyAbsences = mysqlTable("dutyAbsences", {
+  id: int("id").autoincrement().primaryKey(),
+  year: int("year").notNull(),
+  week: int("week").notNull(),
+  memberId: int("memberId").notNull(),
+  message: varchar("message", { length: 300 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DutyAbsence = typeof dutyAbsences.$inferSelect;

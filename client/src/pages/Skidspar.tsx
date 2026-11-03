@@ -15,11 +15,12 @@ import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
 import { getIsoWeek } from "@shared/rink";
-import { AlertTriangle, Phone, Snowflake, Trees, Undo2 } from "lucide-react";
+import { Snowflake, Trees, Undo2 } from "lucide-react";
 import { Leaderboard } from "./Home";
 import CheckinWidget from "@/components/CheckinWidget";
 import VerdictCard from "@/components/VerdictCard";
 import PhotoPicker from "@/components/PhotoPicker";
+import DutyWeeks, { ThisWeekDuty } from "@/components/DutyWeeks";
 import { trackVerdict } from "@shared/verdict";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -35,13 +36,10 @@ const CONDITION_COLOR: Record<string, string> = {
 };
 
 export default function Skidspar() {
-  const { user, isAuthenticated, isTrackFunctionary } = useAuth();
+  const { isAuthenticated, isTrackFunctionary } = useAuth();
   const utils = trpc.useUtils();
   const statusQuery = trpc.track.get.useQuery();
   const [now] = useState(() => new Date());
-  const current = getIsoWeek(now);
-  const [year, setYear] = useState(current.year);
-  const dutyQuery = trpc.skiDuty.list.useQuery({ year });
 
   const [helpers, setHelpers] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -70,13 +68,6 @@ export default function Skidspar() {
     onSuccess: () => {
       utils.track.get.invalidate();
       toast.success("Spårskick uppdaterat");
-    },
-    onError: (e) => toast.error(e.message),
-  });
-  const flag = trpc.skiDuty.flagConflict.useMutation({
-    onSuccess: () => {
-      utils.skiDuty.list.invalidate();
-      toast.success("Förhinder anmält. Admin har meddelats.");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -307,46 +298,7 @@ export default function Skidspar() {
 
         {/* This week's ski duty */}
         <div className="grid gap-6 content-start">
-          <div className="iso-card p-6">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                Vecka {current.week} · Spårjour
-              </div>
-            </div>
-            {dutyQuery.isLoading ? (
-              <Skeleton className="mt-3 h-16" />
-            ) : (
-              (() => {
-                const d = dutyQuery.data?.find((x) => x.week === current.week);
-                if (!d)
-                  return (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Ingen spårjour inlagd för denna vecka.
-                    </p>
-                  );
-                return (
-                  <div className="mt-3">
-                    <div className="font-semibold">
-                      {d.sparjourName || "—"}
-                      {d.sparjourConflict && (
-                        <span className="ml-2 rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-bold text-destructive">
-                          Förhinder
-                        </span>
-                      )}
-                    </div>
-                    {d.sparjourPhone && (
-                      <a
-                        href={`tel:${d.sparjourPhone}`}
-                        className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-primary"
-                      >
-                        <Phone className="h-3.5 w-3.5" /> {d.sparjourPhone}
-                      </a>
-                    )}
-                  </div>
-                );
-              })()
-            )}
-          </div>
+          <ThisWeekDuty area="skidspar" />
 
           <Leaderboard
             title="Insatser i säsong"
@@ -360,90 +312,8 @@ export default function Skidspar() {
 
       {/* Ski duty schedule */}
       <div className="container pb-12">
-        <div className="flex items-end justify-between gap-4 flex-wrap">
-          <h2 className="text-2xl font-extrabold tracking-tight">Spårjour-schema</h2>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-card"
-              onClick={() => setYear((y) => y - 1)}
-            >
-              {year - 1}
-            </Button>
-            <span className="font-extrabold w-14 text-center">{year}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-card"
-              onClick={() => setYear((y) => y + 1)}
-            >
-              {year + 1}
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3">
-          {dutyQuery.isLoading ? (
-            <Skeleton className="h-20 rounded-2xl" />
-          ) : dutyQuery.data && dutyQuery.data.length > 0 ? (
-            dutyQuery.data.map((d) => {
-              const isCurrent = year === current.year && d.week === current.week;
-              const mine = user && d.sparjourUserId === user.id;
-              return (
-                <div
-                  key={d.id}
-                  className={`iso-card p-5 flex items-center gap-4 ${
-                    isCurrent ? "ring-2 ring-primary" : ""
-                  }`}
-                >
-                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary font-extrabold shrink-0">
-                    v{d.week}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold">
-                      {d.sparjourName || "—"}
-                      {d.sparjourConflict && (
-                        <span className="ml-2 rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-bold text-destructive">
-                          Förhinder
-                        </span>
-                      )}
-                    </div>
-                    {d.sparjourPhone && (
-                      <a
-                        href={`tel:${d.sparjourPhone}`}
-                        className="text-sm font-semibold text-primary inline-flex items-center gap-1"
-                      >
-                        <Phone className="h-3.5 w-3.5" /> {d.sparjourPhone}
-                      </a>
-                    )}
-                  </div>
-                  {mine && (
-                    <Button
-                      variant={d.sparjourConflict ? "outline" : "ghost"}
-                      size="sm"
-                      className="gap-1.5 bg-card shrink-0"
-                      onClick={() =>
-                        flag.mutate({
-                          id: d.id,
-                          conflict: !d.sparjourConflict,
-                        })
-                      }
-                      disabled={flag.isPending}
-                    >
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                      {d.sparjourConflict ? "Ta bort" : "Förhinder"}
-                    </Button>
-                  )}
-                </div>
-              );
-            })
-          ) : (
-            <div className="iso-card p-8 text-center text-muted-foreground">
-              Inget spårjour-schema för {year} ännu.
-            </div>
-          )}
-        </div>
+        <h2 className="mb-3 text-2xl font-extrabold tracking-tight">Spårjour</h2>
+        <DutyWeeks area="skidspar" />
       </div>
     </SiteLayout>
   );

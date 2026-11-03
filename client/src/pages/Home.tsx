@@ -6,10 +6,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
-import { getIsoWeek } from "@shared/rink";
 import CheckinWidget from "@/components/CheckinWidget";
 import VerdictCard from "@/components/VerdictCard";
 import PhotoPicker from "@/components/PhotoPicker";
+import { ThisWeekDuty } from "@/components/DutyWeeks";
 import { rinkVerdict, trackVerdict } from "@shared/verdict";
 import { Input } from "@/components/ui/input";
 import {
@@ -176,10 +176,6 @@ export default function Home() {
   const weatherQuery = trpc.weather.current.useQuery(undefined, {
     refetchInterval: 10 * 60 * 1000,
   });
-  const [now] = useState(() => new Date());
-  const { year, week } = getIsoWeek(now);
-  const dutyQuery = trpc.duty.list.useQuery({ year });
-  const thisWeekDuty = dutyQuery.data?.find((d) => d.week === week);
 
   const leaderboardQuery = trpc.status.leaderboard.useQuery();
   const invalidateAll = () => {
@@ -377,7 +373,7 @@ export default function Home() {
 
           {isAuthenticated && !isRinkFunctionary && (
             <div className="sm:col-span-2 rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-              Status uppdateras av de som har plog- och spoljour. Vill du
+              Status uppdateras av rinkjouren. Vill du
               hjälpa till? Hör av dig till en admin så läggs du in i schemat.
             </div>
           )}
@@ -465,40 +461,8 @@ export default function Home() {
           </Link>
 
           {/* This week's duty */}
-          <div className="iso-card p-6">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                Vecka {week} · Jour
-              </div>
-              <Link href="/schema" className="text-sm font-semibold text-primary">
-                Hela schemat
-              </Link>
-            </div>
-            {dutyQuery.isLoading ? (
-              <Skeleton className="mt-3 h-20" />
-            ) : thisWeekDuty ? (
-              <div className="mt-3 space-y-3">
-                <DutyRow
-                  label="Plogjour"
-                  name={thisWeekDuty.plogjourName}
-                  phone={thisWeekDuty.plogjourPhone}
-                  conflict={thisWeekDuty.plogjourConflict}
-                />
-                <DutyRow
-                  label="Spoljour"
-                  name={thisWeekDuty.spoljourName}
-                  phone={thisWeekDuty.spoljourPhone}
-                  conflict={thisWeekDuty.spoljourConflict}
-                />
-              </div>
-            ) : (
-              <p className="mt-2 text-sm text-muted-foreground">
-                Ingen jour inlagd för denna vecka ännu.
-              </p>
-            )}
-          </div>
+          <ThisWeekDuty area="hockeyrink" />
 
-          {/* Effort leaderboard */}
           <Leaderboard
             title="Insatser i säsong"
             subtitle="Plogning & spolning"
@@ -555,44 +519,6 @@ export function Leaderboard({
         <p className="mt-2 text-sm text-muted-foreground">
           Inga insatser registrerade ännu.
         </p>
-      )}
-    </div>
-  );
-}
-
-function DutyRow({
-  label,
-  name,
-  phone,
-  conflict,
-}: {
-  label: string;
-  name: string | null;
-  phone: string | null;
-  conflict: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <div>
-        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {label}
-        </div>
-        <div className="font-semibold">
-          {name || "—"}
-          {conflict && (
-            <span className="ml-2 rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-bold text-destructive">
-              Förhinder
-            </span>
-          )}
-        </div>
-      </div>
-      {phone && (
-        <a
-          href={`tel:${phone}`}
-          className="inline-flex items-center gap-1 text-sm font-semibold text-primary"
-        >
-          <Phone className="h-3.5 w-3.5" /> {phone}
-        </a>
       )}
     </div>
   );

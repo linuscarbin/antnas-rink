@@ -70,8 +70,8 @@ export default function AdminSettings() {
           <h3 className="font-extrabold text-lg">Jourpåminnelse via e-post</h3>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Servern skickar automatiskt e-post till veckans plog- och spoljour (de
-          som är kopplade som medlem med e-post).
+          Servern skickar automatiskt e-post (och notis) till veckans rinkjourlag
+          och spårjour – de som är kopplade till ett konto.
         </p>
 
         <div className="mt-4 rounded-lg border border-border/70 p-3 text-sm">

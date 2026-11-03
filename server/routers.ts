@@ -10,6 +10,7 @@ import { documentsRouter } from "./routers/documents";
 import { dutyRouter } from "./routers/duty";
 import { guidesRouter } from "./routers/guides";
 import { pushRouter } from "./routers/push";
+import { dutyTeamsRouter } from "./routers/dutyTeams";
 import { expensesRouter } from "./routers/expenses";
 import { refuelingsRouter } from "./routers/refuelings";
 import { scheduleRouter } from "./routers/schedule";
@@ -27,6 +28,7 @@ export const appRouter = router({
   duty: dutyRouter,
   guides: guidesRouter,
   push: pushRouter,
+  dutyTeams: dutyTeamsRouter,
   contacts: contactsRouter,
   bookings: bookingsRouter,
   chat: chatRouter,

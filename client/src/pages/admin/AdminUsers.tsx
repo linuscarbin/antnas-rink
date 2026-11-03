@@ -22,7 +22,7 @@ export default function AdminUsers() {
         Admins kan hantera scheman, kontakter, bokningar och användare. Vanliga
         användare kan boka och skriva på anslagstavlan. För att någon ska kunna
         markera plogad/spolad/draget och se guider och kvitton: koppla personen
-        till plog-, spol- eller spårjouren under Rinkjour/Spårjour.
+        till ett rinkjourlag eller spårjouren under Rinkjour/Spårjour.
       </p>
       {usersQuery.isLoading ? (
         <>
