@@ -28,6 +28,18 @@ function sanitize(user: {
   };
 }
 
+// Brute-force protection: max failed logins per IP within a window.
+const FAIL_WINDOW_MS = 15 * 60 * 1000;
+const MAX_FAILS = 10;
+const failedLogins = new Map<string, number[]>();
+
+function recentFails(ip: string): number[] {
+  const now = Date.now();
+  const list = (failedLogins.get(ip) ?? []).filter((t) => now - t < FAIL_WINDOW_MS);
+  failedLogins.set(ip, list);
+  return list;
+}
+
 export const authRouter = router({
   // Current user (null if not logged in).
   me: publicProcedure.query(async ({ ctx }) => {
@@ -91,20 +103,23 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const ip = ctx.req.ip ?? "unknown";
+      if (recentFails(ip).length >= MAX_FAILS) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "För många misslyckade försök. Vänta en kvart och försök igen.",
+        });
+      }
       const user = await db.getUserByEmail(input.email);
-      if (!user) {
+      const ok = user ? await verifyPassword(input.password, user.passwordHash) : false;
+      if (!user || !ok) {
+        recentFails(ip).push(Date.now());
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "Fel e-post eller lösenord.",
         });
       }
-      const ok = await verifyPassword(input.password, user.passwordHash);
-      if (!ok) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Fel e-post eller lösenord.",
-        });
-      }
+      failedLogins.delete(ip);
 
       await db.touchUserSignIn(user.id);
       const token = createSessionToken(user.id);

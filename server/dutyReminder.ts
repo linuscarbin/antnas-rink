@@ -1,6 +1,6 @@
 import { getIsoWeek } from "@shared/rink";
 import * as db from "./db";
-import { emailLayout, sendEmail } from "./email";
+import { emailLayout, esc, sendEmail } from "./email";
 
 /**
  * Sends reminder emails to this week's duty holders:
@@ -65,10 +65,10 @@ export async function sendWeeklyDutyReminders(now = new Date()) {
         ? "Tänk på att hålla rinken i skick och uppdatera statusen när du har plogat eller spolat."
         : "Tänk på att dra spåret vid behov och uppdatera spårstatus och spårskick.";
     const body = `
-      <p>Hej ${r.name || ""}!</p>
+      <p>Hej ${esc(r.name || "")}!</p>
       <p>Du står som <strong>${r.role.toLowerCase()}</strong> för Antnäs ${r.area} denna vecka (vecka ${week}, ${year}).</p>
       <p>${areaText}</p>
-      ${r.note ? `<p>Notering: ${r.note}</p>` : ""}
+      ${r.note ? `<p>Notering: ${esc(r.note)}</p>` : ""}
     `;
     const result = await sendEmail({
       to: r.email,

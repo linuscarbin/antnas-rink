@@ -20,7 +20,9 @@ export default function AdminUsers() {
     <div className="space-y-2 max-w-3xl">
       <p className="text-sm text-muted-foreground mb-2">
         Admins kan hantera scheman, kontakter, bokningar och användare. Vanliga
-        användare kan uppdatera status, boka och skriva på anslagstavlan.
+        användare kan boka och skriva på anslagstavlan. För att någon ska kunna
+        markera plogad/spolad/draget och se guider och kvitton: koppla personen
+        till plog-, spol- eller spårjouren under Rinkjour/Spårjour.
       </p>
       {usersQuery.isLoading ? (
         <>

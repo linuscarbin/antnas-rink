@@ -8,6 +8,12 @@ import {
   router,
 } from "../_core/trpc";
 
+/** Never send password hashes to the browser. */
+function publicUser<T extends { passwordHash?: string }>(u: T) {
+  const { passwordHash: _omit, ...rest } = u;
+  return rest;
+}
+
 export const usersRouter = router({
   // Logged-in: update your own profile (name + phone for duty contact).
   updateMe: protectedProcedure
@@ -19,12 +25,12 @@ export const usersRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       await db.updateUserProfile(ctx.user.id, input);
-      return db.getUserById(ctx.user.id);
+      const u = await db.getUserById(ctx.user.id);
+      return u ? publicUser(u) : null;
     }),
 
-  // Public: lightweight list of members for duty assignment dropdowns.
-  // Returns only id + name (no contact details) and requires login.
-  listForAssignment: protectedProcedure.query(async () => {
+  // Admin: members (with contact details) for duty assignment dropdowns.
+  listForAssignment: adminProcedure.query(async () => {
     const users = await db.listUsers();
     return users.map((u) => ({
       id: u.id,
@@ -36,7 +42,7 @@ export const usersRouter = router({
 
   // Admin: full user list.
   list: adminProcedure.query(async () => {
-    return db.listUsers();
+    return (await db.listUsers()).map(publicUser);
   }),
 
   // Admin: change a user's role. Protects the project owner from demotion.

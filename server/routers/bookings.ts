@@ -39,6 +39,25 @@ export const bookingsRouter = router({
           message: "Sluttiden måste vara efter starttiden.",
         });
       }
+      const now = Date.now();
+      if (start.getTime() < now - 60 * 60 * 1000) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Starttiden har redan passerat.",
+        });
+      }
+      if (start.getTime() > now + 180 * 24 * 3600 * 1000) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Det går bara att boka upp till ett halvår framåt.",
+        });
+      }
+      if (end.getTime() - start.getTime() > 12 * 3600 * 1000) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "En bokning kan vara max 12 timmar.",
+        });
+      }
 
       const conflicts = await db.findConflictingBookings(
         start,

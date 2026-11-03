@@ -58,6 +58,16 @@ export async function sendEmail(params: {
   }
 }
 
+/** Escapes user-provided text before putting it into email HTML. */
+export function esc(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 /** Minimal HTML wrapper for branded emails. */
 export function emailLayout(title: string, bodyHtml: string): string {
   return `<!doctype html><html><body style="margin:0;background:#f4f6f8;font-family:Helvetica,Arial,sans-serif;color:#0f172a;">

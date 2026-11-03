@@ -1,5 +1,5 @@
 import * as db from "./db";
-import { emailLayout, sendEmail } from "./email";
+import { emailLayout, esc, sendEmail } from "./email";
 
 /** Returns true if `date` falls on the same calendar day as `ref` + 1 day. */
 export function isTomorrow(date: Date, ref = new Date()): boolean {
@@ -59,8 +59,8 @@ export async function sendBilbingoReminders(now = new Date(), force = false) {
     const dateStr = fmtDate(new Date(occ.occasionDate));
     const timeStr = fmtTime(new Date(occ.occasionDate));
     const leadLine = occ.leadName
-      ? `<p>Kvällsansvarig: <strong>${occ.leadName}</strong>${
-          occ.leadPhone ? ` (${occ.leadPhone})` : ""
+      ? `<p>Kvällsansvarig: <strong>${esc(occ.leadName)}</strong>${
+          occ.leadPhone ? ` (${esc(occ.leadPhone)})` : ""
         }</p>`
       : "";
 
@@ -68,9 +68,9 @@ export async function sendBilbingoReminders(now = new Date(), force = false) {
     for (const f of fams) {
       if (!f.email) continue;
       const body = `
-        <p>Hej ${f.parentName}!</p>
+        <p>Hej ${esc(f.parentName)}!</p>
         <p>Påminnelse: du är funktionär på <strong>bilbingon imorgon</strong>,
-        ${dateStr}, kl ${timeStr}${occ.location ? ` vid ${occ.location}` : ""}.</p>
+        ${dateStr}, kl ${timeStr}${occ.location ? ` vid ${esc(occ.location)}` : ""}.</p>
         ${leadLine}
         <p>Tack för att du hjälper till — det gör bilbingon möjlig!</p>
       `;
@@ -88,9 +88,9 @@ export async function sendBilbingoReminders(now = new Date(), force = false) {
     // Separate reminder to the kvällsansvarig (if they have an email).
     if (occ.leadEmail) {
       const leadBody = `
-        <p>Hej ${occ.leadName || ""}!</p>
+        <p>Hej ${esc(occ.leadName || "")}!</p>
         <p>Du är <strong>kvällsansvarig</strong> för bilbingon imorgon,
-        ${dateStr}, kl ${timeStr}${occ.location ? ` vid ${occ.location}` : ""}.</p>
+        ${dateStr}, kl ${timeStr}${occ.location ? ` vid ${esc(occ.location)}` : ""}.</p>
         <p>Antal funktionärer inbokade: <strong>${fams.length}</strong>.</p>
         <p>Tack för att du leder kvällen!</p>
       `;

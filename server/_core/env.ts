@@ -1,6 +1,25 @@
+import { randomBytes } from "crypto";
+
+function resolveJwtSecret(): string {
+  const configured = process.env.JWT_SECRET?.trim();
+  if (configured && configured.length >= 16) return configured;
+  if (process.env.NODE_ENV === "production") {
+    // Never fall back to a well-known secret in production: anyone could forge
+    // sessions. A random per-process secret is safe (users just get logged out
+    // on restart) until JWT_SECRET is configured.
+    console.error(
+      "[Security] JWT_SECRET saknas eller är för kort (minst 16 tecken). " +
+        "Använder en tillfällig slumpad nyckel – alla loggas ut vid omstart. " +
+        "Sätt JWT_SECRET (openssl rand -hex 32) i Coolify."
+    );
+    return randomBytes(32).toString("hex");
+  }
+  return configured || "dev-insecure-secret-change-me";
+}
+
 export const ENV = {
   // Session signing secret (JWT). Generate with: openssl rand -hex 32
-  cookieSecret: process.env.JWT_SECRET ?? "dev-insecure-secret-change-me",
+  cookieSecret: resolveJwtSecret(),
   databaseUrl: process.env.DATABASE_URL ?? "",
   isProduction: process.env.NODE_ENV === "production",
 

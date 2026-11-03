@@ -331,7 +331,7 @@ export default function AdminBingo() {
             <Shuffle className="h-5 w-5 text-primary" />
             <h3 className="font-extrabold text-lg">Fördela arbetspass</h3>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               className="bg-card gap-1.5"

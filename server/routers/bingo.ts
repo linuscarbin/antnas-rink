@@ -79,7 +79,8 @@ export const bingoRouter = router({
     }),
 
   /* ----- Teams ----- */
-  listTeams: publicProcedure.query(async () => db.listTeams()),
+  // Admin only: rows include the secret shareToken for the fill-in links.
+  listTeams: adminProcedure.query(async () => db.listTeams()),
 
   createTeam: adminProcedure
     .input(z.object({ name: z.string().min(1).max(160) }))
