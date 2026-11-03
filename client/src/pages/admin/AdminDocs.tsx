@@ -1,3 +1,4 @@
+import { FEATURES } from "@shared/const";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +12,9 @@ import { toast } from "sonner";
 export default function AdminDocs() {
   const utils = trpc.useUtils();
   const docsQuery = trpc.documents.list.useQuery();
-  const infoQuery = trpc.settings.getBingoInfo.useQuery();
+  const infoQuery = trpc.settings.getBingoInfo.useQuery(undefined, {
+    enabled: FEATURES.bilbingo,
+  });
 
   // --- Bilbingo info editor ---
   const [info, setInfo] = useState("");
@@ -84,6 +87,7 @@ export default function AdminDocs() {
   return (
     <div className="space-y-8">
       {/* Bilbingo info */}
+      {FEATURES.bilbingo && (
       <div className="iso-card p-6">
         <h3 className="font-extrabold text-lg mb-1">Bilbingo-information</h3>
         <p className="text-sm text-muted-foreground mb-3">
@@ -111,6 +115,7 @@ export default function AdminDocs() {
           </>
         )}
       </div>
+      )}
 
       {/* Documents */}
       <div className="iso-card p-6">

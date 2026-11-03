@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import AdminBingo from "./admin/AdminBingo";
+import { FEATURES } from "@shared/const";
 import AdminBookings from "./admin/AdminBookings";
 import AdminDocs from "./admin/AdminDocs";
 import AdminContacts from "./admin/AdminContacts";
@@ -29,7 +30,7 @@ const TABS = [
   { id: "duty", label: "Rinkjour", icon: CalendarDays },
   { id: "skiduty", label: "Spårjour", icon: Trees },
   { id: "guides", label: "Guider", icon: BookOpen },
-  { id: "bingo", label: "Bilbingo", icon: Ticket },
+  ...(FEATURES.bilbingo ? [{ id: "bingo", label: "Bilbingo", icon: Ticket } as const] : []),
   { id: "docs", label: "Dokument", icon: FolderOpen },
   { id: "contacts", label: "Kontakter", icon: Users },
   { id: "bookings", label: "Bokningar", icon: CalendarRange },

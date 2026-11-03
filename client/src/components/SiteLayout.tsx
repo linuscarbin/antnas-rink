@@ -2,6 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { FEATURES } from "@shared/const";
 import {
   CalendarDays,
   LayoutDashboard,
@@ -72,7 +73,9 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
   const tabs = isSummer ? SUMMER_TABS : WINTER_TABS;
   const moreItems: NavItem[] = [
     ...nav.filter((n) => !tabs.some((t) => t.href === n.href)),
-    ...(isSummer ? [] : [{ href: "/bilbingo", label: "Bilbingo", icon: Ticket }]),
+    ...(isSummer || !FEATURES.bilbingo
+      ? []
+      : [{ href: "/bilbingo", label: "Bilbingo", icon: Ticket }]),
     ...(isFunctionary
       ? [{ href: "/funktionar", label: "Funktionär", icon: ShieldCheck }]
       : []),
@@ -193,7 +196,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <footer className="border-t border-border/70 bg-background/70">
         <div className="container py-6 text-sm text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-2">
           <span className="font-semibold text-foreground">Antnäs BK</span>
-          <span>Hockeyrink, skidspår och bilbingo — skött av oss tillsammans.</span>
+          <span>Hockeyrink och skidspår — skött av oss tillsammans.</span>
         </div>
       </footer>
 
