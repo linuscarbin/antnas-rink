@@ -29,7 +29,6 @@ function toLocalInputValue(d: Date) {
 
 const ZONE_COLOR: Record<Zone, string> = {
   "full rink": "oklch(0.6 0.17 250)",
-  "one end": "oklch(0.7 0.18 25)",
   "half rink": "oklch(0.72 0.13 184)",
 };
 

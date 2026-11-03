@@ -1,5 +1,6 @@
 import { and, desc, eq, gt, gte, lt, lte, ne, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { findBookingConflicts, type Zone } from "@shared/rink";
 import {
   bilbingoOccasions,
   bingoAssignments,
@@ -408,7 +409,7 @@ export async function getBooking(id: number) {
 export async function findConflictingBookings(
   startTime: Date,
   endTime: Date,
-  zone: "full rink" | "one end" | "half rink",
+  zone: Zone,
   excludeId?: number
 ) {
   const db = await requireDb();
@@ -418,18 +419,19 @@ export async function findConflictingBookings(
     .where(
       and(
         eq(bookings.status, "active"),
-        // overlap: existing.start < new.end AND existing.end > new.start
-        // strict comparison so back-to-back slots (edge-touching) do NOT conflict
         lt(bookings.startTime, endTime),
         gt(bookings.endTime, startTime)
       )
     );
-  return overlapping.filter((b) => {
-    if (excludeId && b.id === excludeId) return false;
-    // full rink blocks any zone; any zone blocks full rink; same zone blocks itself
-    if (b.zone === "full rink" || zone === "full rink") return true;
-    return b.zone === zone;
-  });
+  const slots = overlapping
+    .filter((b) => !(excludeId && b.id === excludeId))
+    .map((b) => ({
+      id: b.id,
+      start: new Date(b.startTime).getTime(),
+      end: new Date(b.endTime).getTime(),
+      zone: b.zone,
+    }));
+  return findBookingConflicts(slots, startTime.getTime(), endTime.getTime(), zone);
 }
 
 export async function createBooking(data: InsertBooking) {

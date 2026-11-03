@@ -1,15 +1,58 @@
 // Shared rink-domain constants used by both client and server.
 
-/** Booking zones — labels MUST stay exactly as specified. */
-export const ZONES = ["full rink", "one end", "half rink"] as const;
+/** Booking zones. The rink can be booked whole, or as one of two halves. */
+export const ZONES = ["full rink", "half rink"] as const;
 export type Zone = (typeof ZONES)[number];
 
 /** Swedish display labels for zones. */
 export const ZONE_LABELS: Record<Zone, string> = {
   "full rink": "Hela rinken",
-  "one end": "Ena änden",
   "half rink": "Halva rinken",
 };
+
+/** How many "half rink" bookings fit at the same time. */
+export const HALVES = 2;
+
+export type BookingSlot = { id?: number; start: number; end: number; zone: Zone };
+
+/** Strict overlap: back-to-back (edge-touching) slots do NOT overlap. */
+function overlaps(aStart: number, aEnd: number, bStart: number, bEnd: number) {
+  return bStart < aEnd && bEnd > aStart;
+}
+
+/**
+ * Returns the existing bookings that make a new booking impossible.
+ * - Hela rinken krockar med allt som överlappar.
+ * - Halva rinken: två halvor får ligga samtidigt; krock först om det redan
+ *   finns två halvor bokade vid någon tidpunkt inom den nya bokningen.
+ */
+export function findBookingConflicts(
+  existing: BookingSlot[],
+  start: number,
+  end: number,
+  zone: Zone
+): BookingSlot[] {
+  const overlapping = existing.filter((b) => overlaps(start, end, b.start, b.end));
+  if (zone === "full rink") return overlapping;
+
+  const full = overlapping.filter((b) => b.zone === "full rink");
+  if (full.length) return full;
+
+  // Sweep: max number of halves booked at the same time within [start, end).
+  const halves = overlapping.filter((b) => b.zone === "half rink");
+  const points = halves.flatMap((b) => [
+    { t: Math.max(b.start, start), d: +1 },
+    { t: Math.min(b.end, end), d: -1 },
+  ]);
+  points.sort((a, b) => a.t - b.t || a.d - b.d); // ends before starts at same t
+  let current = 0;
+  let peak = 0;
+  for (const p of points) {
+    current += p.d;
+    peak = Math.max(peak, current);
+  }
+  return peak >= HALVES ? halves : [];
+}
 
 /** Antnäs (Luleå municipality) approximate coordinates for weather lookup. */
 export const ANTNAS_LAT = 65.5;

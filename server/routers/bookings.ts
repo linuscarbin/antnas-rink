@@ -68,7 +68,9 @@ export const bookingsRouter = router({
         throw new TRPCError({
           code: "CONFLICT",
           message:
-            "Tiden krockar med en befintlig bokning för den valda zonen.",
+            input.zone === "half rink"
+              ? "Båda halvorna är redan bokade då. Välj en annan tid."
+              : "Tiden krockar med en befintlig bokning.",
         });
       }
 
