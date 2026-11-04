@@ -53,3 +53,12 @@ describe("formatPhone", () => {
     expect(formatPhone(null)).toBe("");
   });
 });
+
+describe("parseMemberLines – number only", () => {
+  it("accepts lines with just a phone number (name filled in later)", () => {
+    expect(parseMemberLines("070-111 22 33\n+46 70 444 55 66").map((x) => [x.name, x.phone])).toEqual([
+      ["", "+46701112233"],
+      ["", "+46704445566"],
+    ]);
+  });
+});

@@ -102,8 +102,8 @@ export default function AdminUsers() {
         {importOpen && (
           <div className="mt-4 grid gap-3">
             <p className="text-sm">
-              Klistra in namn och telefonnummer, en person per rad – t.ex. från
-              WhatsApp-gruppen. Alla får ett konto och en personlig länk där de
+              Klistra in namn och telefonnummer (eller bara nummer), en person per
+              rad – t.ex. från WhatsApp-gruppen. Alla får ett konto och en personlig länk där de
               väljer eget lösenord.
             </p>
             <Textarea
@@ -116,8 +116,9 @@ export default function AdminUsers() {
             {parsed.length > 0 && (
               <ul className="max-h-40 overflow-y-auto rounded-md border border-border bg-card p-2 text-sm">
                 {parsed.map((p, i) => (
-                  <li key={i} className={p.phone && p.name ? "" : "text-destructive"}>
-                    {p.name || "?"} – {p.phone ? formatPhone(p.phone) : "inget giltigt nummer"}
+                  <li key={i} className={p.phone ? "" : "text-destructive"}>
+                    {p.name || <span className="text-muted-foreground">(namn fylls i av personen)</span>} –{" "}
+                    {p.phone ? formatPhone(p.phone) : "inget giltigt nummer"}
                   </li>
                 ))}
               </ul>
@@ -140,15 +141,15 @@ export default function AdminUsers() {
             </div>
             <div className="flex gap-2">
               <Button
-                disabled={bulk.isPending || parsed.filter((p) => p.phone && p.name).length === 0}
+                disabled={bulk.isPending || parsed.filter((p) => p.phone).length === 0}
                 onClick={() =>
                   bulk.mutate({
-                    people: parsed.filter((p) => p.phone && p.name).map((p) => ({ name: p.name, phone: p.phone! })),
+                    people: parsed.filter((p) => p.phone).map((p) => ({ name: p.name, phone: p.phone! })),
                     teamId: teamId === "none" ? null : Number(teamId),
                   })
                 }
               >
-                Skapa {parsed.filter((p) => p.phone && p.name).length} konton
+                Skapa {parsed.filter((p) => p.phone).length} konton
               </Button>
               <Button variant="ghost" onClick={() => setImportOpen(false)}>
                 Avbryt
@@ -183,7 +184,7 @@ export default function AdminUsers() {
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5 font-semibold">
-                <span className="truncate">{u.name || "Namnlös"}</span>
+                <span className="truncate">{u.name || formatPhone(u.phone) || "Namnlös"}</span>
                 {u.role === "admin" && <Badge className="bg-primary">Admin</Badge>}
                 {u.teams.map((t) => (
                   <Badge key={`${t.area}-${t.name}`} variant="secondary">

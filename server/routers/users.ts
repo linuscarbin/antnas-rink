@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "../db";
 import { randomBytes } from "crypto";
-import { displayName, normalizePhone, whatsappNumber } from "@shared/user";
+import { formatPhone, normalizePhone, whatsappNumber } from "@shared/user";
 import { accountLink, ADMIN_RESET_TTL_MS, INVITE_TTL_MS, issueAccountToken } from "../accounts";
 import { hashPassword } from "../_core/auth";
 import { assertEmailFree } from "./auth";
@@ -41,6 +41,7 @@ export const usersRouter = router({
       if (input.email === "" && !input.phone && !ctx.user.phone) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Kontot behöver telefonnummer eller e-post." });
       }
+      if (input.name?.trim()) await db.syncTeamMemberName(ctx.user.id, input.name.trim());
       await db.updateUserProfile(ctx.user.id, {
         name: input.name,
         phone: input.phone,
@@ -81,7 +82,7 @@ export const usersRouter = router({
     .input(
       z.object({
         people: z
-          .array(z.object({ name: z.string().trim().min(1).max(120), phone: z.string().trim().max(40) }))
+          .array(z.object({ name: z.string().trim().max(120).default(""), phone: z.string().trim().max(40) }))
           .min(1)
           .max(200),
         teamId: z.number().int().nullable().optional(),
@@ -101,7 +102,8 @@ export const usersRouter = router({
         let status: "created" | "exists" = "exists";
         if (!user) {
           user = (await db.createUser({
-            name: p.name,
+            // No name yet? They fill it in when activating the account.
+            name: p.name || null,
             phone,
             email: null,
             // Unusable until they pick their own password via their link.
@@ -112,7 +114,12 @@ export const usersRouter = router({
           status = "created";
         }
         if (team && !teamMembers.some((m) => m.userId === user.id)) {
-          await db.addRinkTeamMember({ teamId: team.id, userId: user.id, name: displayName(user), phone: user.phone });
+          await db.addRinkTeamMember({
+            teamId: team.id,
+            userId: user.id,
+            name: user.name?.trim() || formatPhone(user.phone),
+            phone: user.phone,
+          });
           teamMembers.push({ userId: user.id } as (typeof teamMembers)[number]);
         }
         results.push({ name: p.name, phone, userId: user.id, status });

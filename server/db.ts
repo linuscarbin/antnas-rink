@@ -156,6 +156,7 @@ export async function updateUserProfile(
   data: { name?: string; phone?: string | null; email?: string | null }
 ) {
   const db = await requireDb();
+  if (data.name === undefined && data.phone === undefined && data.email === undefined) return;
   await db
     .update(users)
     .set({
@@ -1343,4 +1344,10 @@ export async function updateDutyJob(
 ) {
   const db = await requireDb();
   await db.update(dutyJobs).set(data).where(eq(dutyJobs.id, id));
+}
+
+/** Keep the name copied into duty teams in sync with the user's profile. */
+export async function syncTeamMemberName(userId: number, name: string) {
+  const db = await requireDb();
+  await db.update(rinkTeamMembers).set({ name }).where(eq(rinkTeamMembers.userId, userId));
 }
