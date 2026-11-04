@@ -184,7 +184,7 @@ export default function AdminDuty({ area = "hockeyrink" }: { area?: Area }) {
             Lagen får en vecka var i tur och ordning. Befintliga veckor i
             intervallet skrivs över.
           </p>
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <WeekPicker label="Från" year={fromYear} week={fromWeek} onYear={setFromYear} onWeek={setFromWeek} />
             <WeekPicker label="Till" year={toYear} week={toWeek} onYear={setToYear} onWeek={setToWeek} />
           </div>
