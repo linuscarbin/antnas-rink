@@ -1263,3 +1263,45 @@ export async function listDutyJobResponses(jobId: number) {
   const db = await requireDb();
   return db.select().from(dutyJobResponses).where(eq(dutyJobResponses.jobId, jobId));
 }
+
+/* ------------------------ Editing your own posts ------------------------ */
+
+export async function getChatMessage(id: number) {
+  const db = await requireDb();
+  const rows = await db.select().from(chatMessages).where(eq(chatMessages.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function updateChatMessage(id: number, content: string, imageUrl: string | null) {
+  const db = await requireDb();
+  await db
+    .update(chatMessages)
+    .set({ content, imageUrl, editedAt: new Date() })
+    .where(eq(chatMessages.id, id));
+}
+
+export async function updateRefueling(id: number, data: Partial<InsertRefueling>) {
+  const db = await requireDb();
+  await db.update(refuelings).set(data).where(eq(refuelings.id, id));
+  return getRefueling(id);
+}
+
+export async function updateExpense(id: number, data: Partial<InsertExpense>) {
+  const db = await requireDb();
+  await db.update(expenses).set(data).where(eq(expenses.id, id));
+  return getExpense(id);
+}
+
+export async function updateBooking(id: number, data: Partial<InsertBooking>) {
+  const db = await requireDb();
+  await db.update(bookings).set(data).where(eq(bookings.id, id));
+  return getBooking(id);
+}
+
+export async function updateDutyJob(
+  id: number,
+  data: { startsAt?: Date; endsAt?: Date; note?: string | null; kind?: (typeof dutyJobs.$inferInsert)["kind"] }
+) {
+  const db = await requireDb();
+  await db.update(dutyJobs).set(data).where(eq(dutyJobs.id, id));
+}

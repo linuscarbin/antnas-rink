@@ -18,7 +18,7 @@ import {
   stockholmParts,
   type JobKind,
 } from "@shared/jobs";
-import { CalendarClock, Check, CheckCircle2, Clock, Plus, X } from "lucide-react";
+import { CalendarClock, Check, CheckCircle2, Clock, Pencil, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -83,6 +83,7 @@ export default function JobsBoard() {
   });
 
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<EditJob | null>(null);
   const jobs = listQuery.data ?? [];
 
   return (
@@ -155,7 +156,18 @@ export default function JobsBoard() {
                   </div>
                 </div>
 
-                {!done && (
+                {editing?.id === j.id && (
+                  <NewJobForm
+                    areas={[j.area]}
+                    job={editing}
+                    onDone={() => {
+                      setEditing(null);
+                      refresh();
+                    }}
+                    onCancel={() => setEditing(null)}
+                  />
+                )}
+                {!done && editing?.id !== j.id && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {!j.mine && (
                       <>
@@ -181,6 +193,23 @@ export default function JobsBoard() {
                     )}
                     {j.canManage && (
                       <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1"
+                          onClick={() =>
+                            setEditing({
+                              id: j.id,
+                              area: j.area,
+                              kind: j.kind,
+                              startsAt: new Date(j.startsAt),
+                              endsAt: new Date(j.endsAt),
+                              note: j.note ?? "",
+                            })
+                          }
+                        >
+                          <Pencil className="h-4 w-4" /> Ändra
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
@@ -216,25 +245,55 @@ export default function JobsBoard() {
   );
 }
 
+type EditJob = {
+  id: number;
+  area: Area;
+  kind: JobKind;
+  startsAt: Date;
+  endsAt: Date;
+  note: string;
+};
+
+const hhmm = (d: Date) => {
+  const p = stockholmParts(d);
+  return `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`;
+};
+
 function NewJobForm({
   areas,
+  job,
   onDone,
   onCancel,
 }: {
   areas: Area[];
+  /** When set, the form edits this job instead of proposing a new one. */
+  job?: EditJob;
   onDone: () => void;
   onCancel: () => void;
 }) {
-  const init = useMemo(defaultWindow, []);
-  const [area, setArea] = useState<Area>(areas[0]);
-  const [kind, setKind] = useState<JobKind>(AREA_JOB_KINDS[areas[0]][0]);
+  const init = useMemo(
+    () =>
+      job
+        ? { day: stockholmParts(job.startsAt).day, from: hhmm(job.startsAt), to: hhmm(job.endsAt) }
+        : defaultWindow(),
+    [job]
+  );
+  const [area, setArea] = useState<Area>(job?.area ?? areas[0]);
+  const [kind, setKind] = useState<JobKind>(job?.kind ?? AREA_JOB_KINDS[areas[0]][0]);
   const [day, setDay] = useState(init.day);
   const [from, setFrom] = useState(init.from);
   const [to, setTo] = useState(init.to);
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(job?.note ?? "");
   const create = trpc.jobs.create.useMutation({
     onSuccess: () => {
       toast.success("Skickat till laget!");
+      onDone();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const update = trpc.jobs.update.useMutation({
+    onSuccess: () => {
+      toast.success("Jobbet är ändrat.");
       onDone();
     },
     onError: (e) => toast.error(e.message),
@@ -251,7 +310,9 @@ function NewJobForm({
     const start = toDate(day, from);
     let end = toDate(day, to);
     if (end <= start) end = new Date(end.getTime() + 24 * 3600 * 1000); // e.g. 22:00–01:00
-    create.mutate({ area, kind, startsAt: start.getTime(), endsAt: end.getTime(), note: note.trim() || undefined });
+    const data = { kind, startsAt: start.getTime(), endsAt: end.getTime(), note: note.trim() || undefined };
+    if (job) update.mutate({ id: job.id, ...data });
+    else create.mutate({ area, ...data });
   }
 
   return (
@@ -318,8 +379,8 @@ function NewJobForm({
       />
 
       <div className="flex gap-2">
-        <Button onClick={submit} disabled={create.isPending}>
-          Skicka till laget
+        <Button onClick={submit} disabled={create.isPending || update.isPending}>
+          {job ? "Spara ändring" : "Skicka till laget"}
         </Button>
         <Button variant="ghost" onClick={onCancel}>
           Avbryt

@@ -1,10 +1,13 @@
 import SiteLayout from "@/components/SiteLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Mail, Phone, UserRound } from "lucide-react";
 
 export default function Kontakt() {
   const contactsQuery = trpc.contacts.list.useQuery();
+  const { isRinkFunctionary, isTrackFunctionary } = useAuth();
+  const showsDetails = isRinkFunctionary || isTrackFunctionary;
 
   return (
     <SiteLayout>
@@ -13,6 +16,12 @@ export default function Kontakt() {
         <p className="text-muted-foreground">
           Ansvariga för rinken och dess skötsel.
         </p>
+        {!showsDetails && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Telefonnummer och e-post visas för jourhavare. Vill du nå någon? Skriv
+            på anslagstavlan.
+          </p>
+        )}
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {contactsQuery.isLoading ? (

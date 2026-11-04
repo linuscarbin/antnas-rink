@@ -196,8 +196,10 @@ export const chatMessages = mysqlTable("chatMessages", {
   content: text("content").notNull(),
   /** Optional uploaded image URL (served from the uploads folder). */
   imageUrl: varchar("imageUrl", { length: 512 }),
-  /** Soft-delete flag for admin moderation. */
+  /** Soft-delete flag (author or admin). */
   deleted: boolean("deleted").default(false).notNull(),
+  /** Set when the author edits the message ("ändrad"). */
+  editedAt: timestamp("editedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

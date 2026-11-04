@@ -94,7 +94,58 @@ export const expensesRouter = router({
           message: "Endast den som registrerat eller admin kan ta bort.",
         });
       }
+      if (row.reimbursed && ctx.user.role !== "admin") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Redan återbetald – be en admin om du behöver ändra.",
+        });
+      }
       await db.deleteExpense(input.id);
       return { success: true } as const;
+    }),
+
+  // Owner (or admin): fix a mistake. Locked for non-admins once reimbursed.
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.number().int(),
+        amountSek: z.number().min(0).max(1000000),
+        category: z.string().max(120).optional().nullable(),
+        paymentMethod: z.enum(["tankkort_abk", "egen"]),
+        note: z.string().max(500).optional().nullable(),
+        receiptUrl: z.string().max(512).optional().nullable(),
+        purchasedAt: z.number().int().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const row = await db.getExpense(input.id);
+      if (!row) throw new TRPCError({ code: "NOT_FOUND" });
+      const isAdmin = ctx.user.role === "admin";
+      if (row.userId !== ctx.user.id && !isAdmin) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Du kan bara ändra utlägget du själv har registrerat.",
+        });
+      }
+      if (row.reimbursed && !isAdmin) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Redan återbetald – be en admin om du behöver ändra.",
+        });
+      }
+      const receiptUrl =
+        input.receiptUrl && /^https?:\/\/|^\/uploads\//.test(input.receiptUrl)
+          ? input.receiptUrl
+          : null;
+      return db.updateExpense(row.id, {
+        amountOre: Math.round(input.amountSek * 100),
+        category: input.category?.trim() || null,
+        paymentMethod: input.paymentMethod,
+        // Switching to the club card means nothing to reimburse.
+        ...(input.paymentMethod === "tankkort_abk" ? { reimbursed: false } : {}),
+        note: input.note?.trim() || null,
+        receiptUrl,
+        ...(input.purchasedAt ? { purchasedAt: new Date(input.purchasedAt) } : {}),
+      });
     }),
 });

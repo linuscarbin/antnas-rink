@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "../db";
 import { rotateTeams } from "@shared/rink";
+import { canSeeContactDetails } from "../_core/functionary";
 import { emailLayout, esc, sendEmail } from "../email";
 import { notifyConflict } from "../push";
 import {
@@ -28,8 +29,10 @@ export const dutyRouter = router({
   // Public: anyone can view the duty schedule.
   list: publicProcedure
     .input(z.object({ year: z.number().int().optional() }).optional())
-    .query(async ({ input }) => {
-      return db.listDuties(input?.year);
+    .query(async ({ ctx, input }) => {
+      const rows = await db.listDuties(input?.year);
+      if (await canSeeContactDetails(ctx.user)) return rows;
+      return rows.map((d) => ({ ...d, plogjourPhone: null, spoljourPhone: null }));
     }),
 
   // Admin: create or update a week's duty assignment.

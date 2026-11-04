@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "../db";
 import { emailLayout, esc, sendEmail } from "../email";
-import { isFunctionaryFor } from "../_core/functionary";
+import { canSeeContactDetails, isFunctionaryFor } from "../_core/functionary";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { notifyTopicLater } from "../push";
 
@@ -13,9 +13,9 @@ const AREA_TEXT = {
 } as const;
 
 export const dutyTeamsRouter = router({
-  // Public: an area's teams + member names. Phones only for its functionaries.
+  // Public: an area's teams + member names. Phones only for functionaries/admins.
   list: publicProcedure.input(z.object({ area })).query(async ({ ctx, input }) => {
-    const showPhone = await isFunctionaryFor(ctx.user, input.area);
+    const showPhone = await canSeeContactDetails(ctx.user);
     const teams = await db.listRinkTeams(input.area);
     return teams.map((t) => ({
       id: t.id,

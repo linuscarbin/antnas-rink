@@ -9,6 +9,35 @@ import {
   router,
 } from "../_core/trpc";
 
+/** Shared checks for new and edited bookings. */
+function validateTimes(start: Date, end: Date) {
+  if (end <= start) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Sluttiden måste vara efter starttiden.",
+    });
+  }
+  const now = Date.now();
+  if (start.getTime() < now - 60 * 60 * 1000) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Starttiden har redan passerat.",
+    });
+  }
+  if (start.getTime() > now + 180 * 24 * 3600 * 1000) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Det går bara att boka upp till ett halvår framåt.",
+    });
+  }
+  if (end.getTime() - start.getTime() > 12 * 3600 * 1000) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "En bokning kan vara max 12 timmar.",
+    });
+  }
+}
+
 export const bookingsRouter = router({
   // Public: view bookings (optionally from a given time forward).
   list: publicProcedure
@@ -33,31 +62,7 @@ export const bookingsRouter = router({
       const start = new Date(input.startTime);
       const end = new Date(input.endTime);
 
-      if (end <= start) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Sluttiden måste vara efter starttiden.",
-        });
-      }
-      const now = Date.now();
-      if (start.getTime() < now - 60 * 60 * 1000) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Starttiden har redan passerat.",
-        });
-      }
-      if (start.getTime() > now + 180 * 24 * 3600 * 1000) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Det går bara att boka upp till ett halvår framåt.",
-        });
-      }
-      if (end.getTime() - start.getTime() > 12 * 3600 * 1000) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "En bokning kan vara max 12 timmar.",
-        });
-      }
+      validateTimes(start, end);
 
       const conflicts = await db.findConflictingBookings(
         start,
@@ -109,5 +114,47 @@ export const bookingsRouter = router({
     .mutation(async ({ input }) => {
       await db.cancelBooking(input.id);
       return { success: true } as const;
+    }),
+
+  // Owner (or admin): change your own booking. Conflicts ignore itself.
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.number().int(),
+        title: z.string().min(1).max(160),
+        zone: z.enum(ZONES),
+        startTime: z.number().int(),
+        endTime: z.number().int(),
+        note: z.string().max(500).optional().nullable(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const booking = await db.getBooking(input.id);
+      if (!booking || booking.status !== "active") {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Bokning hittades inte." });
+      }
+      if (booking.userId !== ctx.user.id && ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Du kan bara ändra dina egna bokningar." });
+      }
+      const start = new Date(input.startTime);
+      const end = new Date(input.endTime);
+      validateTimes(start, end);
+      const conflicts = await db.findConflictingBookings(start, end, input.zone, booking.id);
+      if (conflicts.length > 0) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message:
+            input.zone === "half rink"
+              ? "Båda halvorna är redan bokade då. Välj en annan tid."
+              : "Tiden krockar med en befintlig bokning.",
+        });
+      }
+      return db.updateBooking(booking.id, {
+        title: input.title,
+        zone: input.zone,
+        startTime: start,
+        endTime: end,
+        note: input.note ?? null,
+      });
     }),
 });

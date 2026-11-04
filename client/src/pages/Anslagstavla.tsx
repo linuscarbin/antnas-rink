@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getLoginUrl } from "@/const";
 import { formatDateTime } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
-import { ImagePlus, Loader2, MessageSquare, Send, Trash2, X } from "lucide-react";
+import { ImagePlus, Loader2, MessageSquare, Pencil, Send, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -39,6 +39,15 @@ export default function Anslagstavla() {
   });
   const remove = trpc.chat.remove.useMutation({
     onSuccess: () => utils.chat.list.invalidate(),
+    onError: (e) => toast.error(e.message),
+  });
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+  const update = trpc.chat.update.useMutation({
+    onSuccess: () => {
+      setEditId(null);
+      utils.chat.list.invalidate();
+    },
     onError: (e) => toast.error(e.message),
   });
 
@@ -136,23 +145,64 @@ export default function Anslagstavla() {
                           />
                         </a>
                       )}
-                      {m.content && (
-                        <div className="whitespace-pre-wrap break-words text-sm">
-                          {m.content}
+                      {editId === m.id ? (
+                        <div className="mt-1 grid gap-1.5">
+                          <Textarea
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            rows={3}
+                            className="bg-background text-sm text-foreground"
+                            autoFocus
+                          />
+                          <div className="flex justify-end gap-1.5">
+                            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditId(null)}>
+                              Avbryt
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-7 text-xs"
+                              disabled={update.isPending}
+                              onClick={() =>
+                                update.mutate({ id: m.id, content: editText, imageUrl: m.imageUrl })
+                              }
+                            >
+                              Spara
+                            </Button>
+                          </div>
                         </div>
-                      )}
-                      {user?.role === "admin" && (
-                        <button
-                          onClick={() => remove.mutate({ id: m.id })}
-                          className="absolute -right-2 -top-2 hidden rounded-full bg-destructive p-1 text-destructive-foreground group-hover:block"
-                          aria-label="Ta bort"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
+                      ) : (
+                        m.content && (
+                          <div className="whitespace-pre-wrap break-words text-sm">
+                            {m.content}
+                          </div>
+                        )
                       )}
                     </div>
-                    <span className="mt-0.5 text-[11px] text-muted-foreground">
+                    <span className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
                       {formatDateTime(m.createdAt)}
+                      {m.editedAt && <span>(ändrad)</span>}
+                      {mine && editId !== m.id && (
+                        <button
+                          className="inline-flex items-center gap-0.5 font-semibold hover:text-foreground"
+                          onClick={() => {
+                            setEditId(m.id);
+                            setEditText(m.content);
+                          }}
+                        >
+                          <Pencil className="h-3 w-3" /> Ändra
+                        </button>
+                      )}
+                      {(mine || user?.role === "admin") && editId !== m.id && (
+                        <button
+                          className="inline-flex items-center gap-0.5 font-semibold text-destructive/80 hover:text-destructive"
+                          onClick={() => {
+                            if (confirm("Ta bort inlägget?")) remove.mutate({ id: m.id });
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" /> Ta bort
+                        </button>
+                      )}
                     </span>
                   </div>
                 );

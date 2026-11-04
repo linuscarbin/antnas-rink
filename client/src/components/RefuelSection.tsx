@@ -21,6 +21,7 @@ import {
   ImagePlus,
   Loader2,
   Receipt,
+  Pencil,
   Trash2,
 } from "lucide-react";
 import { useRef, useState } from "react";
@@ -45,6 +46,7 @@ export default function RefuelSection({ area }: { area: Area }) {
   const [note, setNote] = useState("");
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const invalidate = () => {
@@ -61,6 +63,22 @@ export default function RefuelSection({ area }: { area: Area }) {
       setReceiptUrl(null);
       setPayment("tankkort_abk");
       toast.success("Tankning registrerad.");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const resetForm = () => {
+    setEditingId(null);
+    setAmount("");
+    setLitres("");
+    setNote("");
+    setReceiptUrl(null);
+    setPayment("tankkort_abk");
+  };
+  const update = trpc.refuelings.update.useMutation({
+    onSuccess: () => {
+      invalidate();
+      resetForm();
+      toast.success("Ändringen är sparad.");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -107,6 +125,17 @@ export default function RefuelSection({ area }: { area: Area }) {
   function submit() {
     const amountSek = parseFloat(amount.replace(",", "."));
     if (!amountSek || amountSek <= 0) return toast.error("Ange ett belopp.");
+    if (editingId) {
+      update.mutate({
+        id: editingId,
+        amountSek,
+        litres: litres ? parseFloat(litres.replace(",", ".")) : null,
+        paymentMethod: payment,
+        note: note || null,
+        receiptUrl: receiptUrl || null,
+      });
+      return;
+    }
     create.mutate({
       area,
       amountSek,
@@ -137,10 +166,12 @@ export default function RefuelSection({ area }: { area: Area }) {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Form */}
         <div className="lg:col-span-1">
-          <div className="iso-card p-6 lg:sticky lg:top-24">
+          <div id={`refuel-form-${area}`} className="iso-card p-6 lg:sticky lg:top-24 scroll-mt-24">
             {isAuthenticated ? (
               <div className="space-y-4">
-                <h3 className="font-extrabold text-lg">Ny tankning</h3>
+                <h3 className="font-extrabold text-lg">
+                  {editingId ? "Ändra tankning" : "Ny tankning"}
+                </h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Belopp (kr)</Label>
@@ -234,10 +265,15 @@ export default function RefuelSection({ area }: { area: Area }) {
                 <Button
                   className="w-full font-semibold"
                   onClick={submit}
-                  disabled={create.isPending}
+                  disabled={create.isPending || update.isPending}
                 >
-                  Registrera tankning
+                  {editingId ? "Spara ändring" : "Registrera tankning"}
                 </Button>
+                {editingId && (
+                  <Button variant="ghost" className="w-full" onClick={resetForm}>
+                    Avbryt ändring
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4 text-sm text-muted-foreground">
@@ -338,7 +374,9 @@ export default function RefuelSection({ area }: { area: Area }) {
             <div className="space-y-2">
               {listQuery.data.map((r) => {
                 const mine = user && r.userId === user.id;
-                const canDelete = mine || user?.role === "admin";
+                const isAdmin = user?.role === "admin";
+                // Own entries can be fixed until they're reimbursed; admins always.
+                const canEdit = isAdmin || (mine && !r.reimbursed);
                 return (
                   <div key={r.id} className="iso-card p-4 flex items-center gap-4">
                     {r.receiptUrl ? (
@@ -399,12 +437,34 @@ export default function RefuelSection({ area }: { area: Area }) {
                           <Check className="h-4 w-4" />
                         </Button>
                       )}
-                      {canDelete && (
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Ändra"
+                          title="Ändra"
+                          onClick={() => {
+                            setEditingId(r.id);
+                            setAmount(String(r.amountOre / 100).replace(".", ","));
+                            setLitres(r.litresCenti != null ? String(r.litresCenti / 100).replace(".", ",") : "");
+                            setPayment(r.paymentMethod as "tankkort_abk" | "egen");
+                            setNote(r.note ?? "");
+                            setReceiptUrl(r.receiptUrl ?? null);
+                            document.getElementById(`refuel-form-${area}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {canEdit && (
                         <Button
                           variant="ghost"
                           size="icon"
                           aria-label="Ta bort"
-                          onClick={() => del.mutate({ id: r.id })}
+                          title="Ta bort"
+                          onClick={() => {
+                            if (confirm("Ta bort posten?")) del.mutate({ id: r.id });
+                          }}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>

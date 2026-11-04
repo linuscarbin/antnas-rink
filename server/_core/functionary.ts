@@ -41,3 +41,11 @@ export async function assertFunctionary(
     });
   }
 }
+
+/** Phone numbers and e-mail are only shown to functionaries (any area) and admins. */
+export async function canSeeContactDetails(
+  user: AccessUser | null | undefined
+): Promise<boolean> {
+  const areas = await functionaryAreas(user);
+  return areas.hockeyrink || areas.skidspar;
+}
