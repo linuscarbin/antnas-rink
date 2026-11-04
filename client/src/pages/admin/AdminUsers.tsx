@@ -201,7 +201,8 @@ export default function AdminUsers() {
                 {[formatPhone(u.phone), u.email].filter(Boolean).join(" · ") || "—"}
               </div>
             </div>
-            <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            {/* Own row on phones, beside the name on wider screens. */}
+            <div className="flex w-full flex-wrap items-center justify-end gap-1.5 sm:ml-auto sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
