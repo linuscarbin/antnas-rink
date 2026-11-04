@@ -557,3 +557,25 @@ export const eventResponses = mysqlTable("eventResponses", {
   comment: varchar("comment", { length: 200 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
+
+/**
+ * Sponsors shown in the app: a logo, a short text and a link. "huvud"
+ * (main) sponsors get a large card on Rinken/Skidspåret; everyone appears
+ * in the sponsor strip and on /sponsorer.
+ */
+export const sponsors = mysqlTable("sponsors", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 120 }).notNull(),
+  logoUrl: varchar("logoUrl", { length: 500 }),
+  text: varchar("text", { length: 300 }),
+  url: varchar("url", { length: 500 }),
+  tier: mysqlEnum("tier", ["huvud", "sponsor"]).default("sponsor").notNull(),
+  /** Where the big card shows for main sponsors. */
+  area: mysqlEnum("area", ["alla", "hockeyrink", "skidspar"]).default("alla").notNull(),
+  active: boolean("active").default(true).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Sponsor = typeof sponsors.$inferSelect;
+export type InsertSponsor = typeof sponsors.$inferInsert;
