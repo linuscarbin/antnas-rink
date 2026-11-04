@@ -22,7 +22,6 @@ import JobsBoard from "@/components/JobsBoard";
 import RefuelSection from "@/components/RefuelSection";
 import ExpenseSection from "@/components/ExpenseSection";
 import { Leaderboard } from "./Home";
-import CheckinWidget from "@/components/CheckinWidget";
 import RulesButton from "@/components/RulesButton";
 import VerdictCard from "@/components/VerdictCard";
 import PhotoPicker from "@/components/PhotoPicker";
@@ -136,7 +135,7 @@ export default function Skidspar() {
               <RulesButton area="skidspar" />
             </div>
           </div>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 max-w-4xl">
+          <div className="mt-6 grid max-w-xl gap-4">
             <VerdictCard
               label="Skidspåret"
               loading={statusQuery.isLoading}
@@ -158,7 +157,6 @@ export default function Skidspar() {
                   : null
               }
             />
-            <CheckinWidget area="skidspar" />
           </div>
         </div>
       </section>
