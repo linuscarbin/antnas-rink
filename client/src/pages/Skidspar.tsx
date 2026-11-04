@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
+import TeamChat from "@/components/TeamChat";
 import { SponsorSpotlight } from "@/components/Sponsors";
 import { EventCard } from "@/components/EventsBoard";
 import { getIsoWeek } from "@shared/rink";
@@ -102,6 +103,7 @@ export default function Skidspar() {
 
       {tab === "jour" && (
         <div className="container grid gap-10 py-6">
+          {isTrackFunctionary && <TeamChat area="skidspar" />}
           <section>
             <h2 className="mb-3 text-xl font-extrabold tracking-tight">Spårjour</h2>
             <DutyWeeks area="skidspar" />

@@ -605,3 +605,26 @@ export const notifications = mysqlTable(
 );
 
 export type NotificationRow = typeof notifications.$inferSelect;
+
+/**
+ * Team chat ("lagchatt") for a duty team. Jobs from "Planera jobb" show up
+ * in the flow: kind "job" is the job card, "event" a small line such as
+ * "Lisa hänger med" or "Klart – plogad".
+ */
+export const teamMessages = mysqlTable(
+  "teamMessages",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    teamId: int("teamId").notNull(),
+    kind: mysqlEnum("kind", ["text", "job", "event"]).default("text").notNull(),
+    userId: int("userId"),
+    name: varchar("name", { length: 120 }).notNull(),
+    body: varchar("body", { length: 1000 }).notNull().default(""),
+    photoUrl: varchar("photoUrl", { length: 512 }),
+    jobId: int("jobId"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("teamMessages_team_id").on(t.teamId, t.id)]
+);
+
+export type TeamMessage = typeof teamMessages.$inferSelect;

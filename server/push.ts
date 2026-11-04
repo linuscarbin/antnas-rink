@@ -93,6 +93,8 @@ export async function notifyTopic(
     throttleKey?: string;
     ignoreQuiet?: boolean;
     now?: Date;
+    /** Don't save in the inbox (e.g. chat – the chat itself is the history). */
+    noInbox?: boolean;
   } = {}
 ): Promise<{ sent: number; skipped?: "quiet" | "throttled" }> {
   const now = opts.now ?? new Date();
@@ -109,7 +111,7 @@ export async function notifyTopic(
   const subs = await db.listPushSubscriptions(topic, opts.userIds);
   const inboxUsers =
     opts.userIds ?? subs.map((s) => s.userId).filter((u): u is number => u != null);
-  await logInbox(inboxUsers, topic, msg);
+  if (!opts.noInbox) await logInbox(inboxUsers, topic, msg);
 
   if (!opts.ignoreQuiet && isQuietTime(now)) return { sent: 0, skipped: "quiet" };
 

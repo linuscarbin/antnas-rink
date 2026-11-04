@@ -14,6 +14,7 @@ import {
   InsertGuide,
   pushSubscriptions,
   notifications,
+  teamMessages,
   InsertPushSubscription,
   rinkTeams,
   rinkTeamMembers,
@@ -1117,6 +1118,60 @@ export async function removeTopicForUser(userId: number, topic: string) {
       .set({ topics: next === "," ? "" : next })
       .where(eq(pushSubscriptions.id, r.id));
   }
+}
+
+/* ------------------------------ Team chat ------------------------------ */
+
+const CHAT_DAYS = 180;
+
+export async function addTeamMessage(data: {
+  teamId: number;
+  kind: "text" | "job" | "event";
+  userId: number | null;
+  name: string;
+  body: string;
+  photoUrl?: string | null;
+  jobId?: number | null;
+}) {
+  const db = await requireDb();
+  const [row] = await db
+    .insert(teamMessages)
+    .values({ ...data, body: data.body.slice(0, 1000), name: data.name.slice(0, 120) })
+    .$returningId();
+  await db.delete(teamMessages).where(lt(teamMessages.createdAt, new Date(Date.now() - CHAT_DAYS * 86400_000)));
+  return row.id;
+}
+
+/** Latest messages of a team, oldest first (optionally only newer than an id). */
+export async function listTeamMessages(teamId: number, opts: { afterId?: number; limit?: number } = {}) {
+  const db = await requireDb();
+  const where = opts.afterId
+    ? and(eq(teamMessages.teamId, teamId), gt(teamMessages.id, opts.afterId))
+    : eq(teamMessages.teamId, teamId);
+  const rows = await db
+    .select()
+    .from(teamMessages)
+    .where(where)
+    .orderBy(desc(teamMessages.id))
+    .limit(opts.limit ?? 100);
+  return rows.reverse();
+}
+
+export async function getTeamMessage(id: number) {
+  const db = await requireDb();
+  const rows = await db.select().from(teamMessages).where(eq(teamMessages.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function deleteTeamMessage(id: number) {
+  const db = await requireDb();
+  await db.delete(teamMessages).where(eq(teamMessages.id, id));
+}
+
+/** Absences in a set of members that a user stands in for (any week). */
+export async function coveredAbsencesForUser(userId: number) {
+  const db = await requireDb();
+  return db.select().from(dutyAbsences).where(eq(dutyAbsences.coveredByUserId, userId));
 }
 
 /* ------------------------------ Notification inbox ------------------------------ */

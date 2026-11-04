@@ -190,6 +190,20 @@
       "when": 1793826751398,
       "tag": "0026_loud_riptide",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "5",
+      "when": 1793827155128,
+      "tag": "0027_overconfident_madelyne_pryor",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "5",
+      "when": 1793827156032,
+      "tag": "0028_chat_topic_for_functionaries",
+      "breakpoints": true
     }
   ]
 }

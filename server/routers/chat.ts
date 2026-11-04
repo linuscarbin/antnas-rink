@@ -14,7 +14,7 @@ import {
  * Accept only our own image URLs: the relative disk path, or an absolute URL
  * under the configured R2 public domain.
  */
-function ownImageUrl(candidate: string | null | undefined): string | null {
+export function ownImageUrl(candidate: string | null | undefined): string | null {
   const r2Base = ENV.r2.publicUrl.replace(/\/+$/, "");
   const url = candidate ?? "";
   return url.startsWith("/uploads/") || (r2Base && url.startsWith(`${r2Base}/`)) ? url : null;

@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
+import TeamChat from "@/components/TeamChat";
 import { SponsorSpotlight } from "@/components/Sponsors";
 import CheckinWidget from "@/components/CheckinWidget";
 import VerdictCard from "@/components/VerdictCard";
@@ -256,6 +257,7 @@ export default function Home() {
 
       {tab === "jour" && (
         <div className="container grid gap-10 py-6">
+          {isRinkFunctionary && <TeamChat area="hockeyrink" />}
           <section>
             <h2 className="mb-3 text-xl font-extrabold tracking-tight">Rinkjour</h2>
             <DutyWeeks area="hockeyrink" />

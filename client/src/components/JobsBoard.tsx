@@ -70,7 +70,10 @@ export default function JobsBoard({ area }: { area?: Area } = {}) {
   const utils = trpc.useUtils();
   const listQuery = trpc.jobs.list.useQuery(undefined, { refetchInterval: 60 * 1000 });
   const onError = (e: { message: string }) => toast.error(e.message);
-  const refresh = () => utils.jobs.list.invalidate();
+  const refresh = () => {
+    utils.jobs.list.invalidate();
+    utils.teamChat.list.invalidate(); // jobs show up in the team chat too
+  };
   const respond = trpc.jobs.respond.useMutation({ onSuccess: refresh, onError });
   const setStatus = trpc.jobs.setStatus.useMutation({
     onSuccess: (_r, vars) => {
