@@ -190,3 +190,7 @@
   .sponsor-ticker-track { animation: none; }
   .sponsor-ticker { overflow-x: auto; }
 }
+
+/* Swipeable rows (hub tabs, chips) without a visible scrollbar. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
