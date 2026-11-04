@@ -15,9 +15,15 @@ import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
 import { getIsoWeek } from "@shared/rink";
-import { Snowflake, Trees, Undo2 } from "lucide-react";
+import { BookOpen, Receipt, Snowflake, Trees, Undo2, Users } from "lucide-react";
+import HubTabs, { useHubTab } from "@/components/HubTabs";
+import GuidesSection from "@/components/GuidesSection";
+import JobsBoard from "@/components/JobsBoard";
+import RefuelSection from "@/components/RefuelSection";
+import ExpenseSection from "@/components/ExpenseSection";
 import { Leaderboard } from "./Home";
 import CheckinWidget from "@/components/CheckinWidget";
+import RulesButton from "@/components/RulesButton";
 import VerdictCard from "@/components/VerdictCard";
 import PhotoPicker from "@/components/PhotoPicker";
 import DutyWeeks, { ThisWeekDuty } from "@/components/DutyWeeks";
@@ -37,6 +43,13 @@ const CONDITION_COLOR: Record<string, string> = {
 
 export default function Skidspar() {
   const { isAuthenticated, isTrackFunctionary } = useAuth();
+  const tabs = [
+    { id: "oversikt" as const, label: "Översikt", icon: Trees },
+    { id: "jour" as const, label: "Jour", icon: Users },
+    { id: "info" as const, label: "Info", icon: BookOpen },
+    ...(isTrackFunctionary ? [{ id: "kostnader" as const, label: "Kostnader", icon: Receipt }] : []),
+  ];
+  const [tab, setTab] = useHubTab(tabs, "oversikt");
   const utils = trpc.useUtils();
   const statusQuery = trpc.track.get.useQuery();
   const [now] = useState(() => new Date());
@@ -82,6 +95,29 @@ export default function Skidspar() {
 
   return (
     <SiteLayout>
+      <HubTabs title="Skidspåret" tabs={tabs} value={tab} onChange={setTab} />
+
+      {tab === "jour" && (
+        <div className="container grid gap-10 py-6">
+          <section>
+            <h2 className="mb-3 text-xl font-extrabold tracking-tight">Spårjour</h2>
+            <DutyWeeks area="skidspar" />
+          </section>
+          {isTrackFunctionary && <JobsBoard area="skidspar" />}
+        </div>
+      )}
+
+      {tab === "info" && <GuidesSection area="skidspar" />}
+
+      {tab === "kostnader" && isTrackFunctionary && (
+        <div className="pt-6">
+          <RefuelSection area="skidspar" />
+          <ExpenseSection area="skidspar" />
+        </div>
+      )}
+
+      {tab === "oversikt" && (
+      <>
       <section className="relative overflow-hidden border-b border-border/60">
         <IsoDecor />
         <div className="container relative py-10 sm:py-14">
@@ -96,6 +132,9 @@ export default function Skidspar() {
               Se när längdspåret senast drogs, aktuellt spårskick och vem som har
               spårjour.
             </p>
+            <div className="mt-4">
+              <RulesButton area="skidspar" />
+            </div>
           </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 max-w-4xl">
             <VerdictCard
@@ -298,7 +337,7 @@ export default function Skidspar() {
 
         {/* This week's ski duty */}
         <div className="grid gap-6 content-start">
-          <ThisWeekDuty area="skidspar" />
+          <ThisWeekDuty area="skidspar" href="/skidspar?flik=jour" />
 
           <Leaderboard
             title="Insatser i säsong"
@@ -310,11 +349,8 @@ export default function Skidspar() {
       </div>
 
 
-      {/* Ski duty schedule */}
-      <div className="container pb-12">
-        <h2 className="mb-3 text-2xl font-extrabold tracking-tight">Spårjour</h2>
-        <DutyWeeks area="skidspar" />
-      </div>
+      </>
+      )}
     </SiteLayout>
   );
 }

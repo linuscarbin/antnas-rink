@@ -50,8 +50,9 @@ type EventItem = {
 
 /** Full page content: list of call-outs + "Kalla till arbetsdag" for functionaries. */
 export default function EventsBoard() {
-  const { isRinkFunctionary, isTrackFunctionary } = useAuth();
-  const canCreate = isRinkFunctionary || isTrackFunctionary;
+  // Only admins call people to a work day (done from the admin panel).
+  const { isAdmin } = useAuth();
+  const canCreate = isAdmin;
   const listQuery = trpc.events.list.useQuery(undefined, { refetchInterval: 60 * 1000 });
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<EventItem | null>(null);

@@ -59,3 +59,8 @@ export function groupSize(
     .filter((c) => Math.abs(c.arriveAt - at) <= windowMs)
     .reduce((sum, c) => sum + c.people, 0);
 }
+
+/** Where a duty notification for an area should open (the hub's "Jour" tab). */
+export function jourUrl(area: "hockeyrink" | "skidspar"): string {
+  return area === "hockeyrink" ? "/?flik=jour" : "/skidspar?flik=jour";
+}

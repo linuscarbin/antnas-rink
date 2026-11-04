@@ -40,9 +40,8 @@ type Viewer = { id: number; role: "user" | "admin" } | null | undefined;
 
 /** Admins and functionaries can call people together. */
 async function assertCanCreate(user: Viewer) {
-  const areas = await functionaryAreas(user);
-  if (!areas.hockeyrink && !areas.skidspar) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Bara jourhavare och admin kan kalla till arbetsdag." });
+  if (user?.role !== "admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Bara admin kan kalla till arbetsdag." });
   }
 }
 

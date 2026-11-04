@@ -59,12 +59,14 @@ function defaultWindow() {
  * "Jag kan ploga 18–20 – vem hänger med?": propose a job to your duty team
  * and answer others' proposals with one tap.
  */
-export default function JobsBoard() {
+export default function JobsBoard({ area }: { area?: Area } = {}) {
   const { isRinkFunctionary, isTrackFunctionary } = useAuth();
-  const areas: Area[] = [
-    ...(isRinkFunctionary ? (["hockeyrink"] as const) : []),
-    ...(isTrackFunctionary ? (["skidspar"] as const) : []),
-  ];
+  const areas: Area[] = area
+    ? [area]
+    : [
+        ...(isRinkFunctionary ? (["hockeyrink"] as const) : []),
+        ...(isTrackFunctionary ? (["skidspar"] as const) : []),
+      ];
   const utils = trpc.useUtils();
   const listQuery = trpc.jobs.list.useQuery(undefined, { refetchInterval: 60 * 1000 });
   const onError = (e: { message: string }) => toast.error(e.message);
@@ -84,12 +86,12 @@ export default function JobsBoard() {
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<EditJob | null>(null);
-  const jobs = listQuery.data ?? [];
+  const jobs = (listQuery.data ?? []).filter((j) => !area || j.area === area);
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-2xl font-extrabold tracking-tight">
+        <h2 className="flex items-center gap-2 text-xl font-extrabold tracking-tight">
           <CalendarClock className="h-5 w-5 text-primary" /> Planera jobb
         </h2>
         {!open && (

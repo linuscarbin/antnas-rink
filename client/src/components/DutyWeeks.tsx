@@ -148,7 +148,7 @@ export function MemberLine({
 }
 
 /** Compact "this week" card used on the rink and ski-track pages. */
-export function ThisWeekDuty({ area }: { area: DutyArea }) {
+export function ThisWeekDuty({ area, href }: { area: DutyArea; href?: string }) {
   const [now] = useState(() => new Date());
   const { year, week } = getIsoWeek(now);
   const { weeks, isAbsent, loading } = useDutyWeeks(area, year);
@@ -160,8 +160,8 @@ export function ThisWeekDuty({ area }: { area: DutyArea }) {
         <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
           Vecka {week} · {label}
         </div>
-        {area === "hockeyrink" && (
-          <Link href="/schema" className="text-sm font-semibold text-primary">
+        {href && (
+          <Link href={href} className="text-sm font-semibold text-primary">
             Hela schemat
           </Link>
         )}

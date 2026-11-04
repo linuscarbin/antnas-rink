@@ -99,7 +99,7 @@ export async function sendWeeklyDutyReminders(now = new Date()) {
       {
         title: `Din ${r.role.toLowerCase()} börjar 📅`,
         body: `Du har ${r.role.toLowerCase()} vecka ${week}. ${r.area === "rink" ? "Markera plogad/spolad när du är klar." : "Markera draget när du är klar."}`,
-        url: "/funktionar",
+        url: r.area === "rink" ? "/?flik=jour" : "/skidspar?flik=jour",
       },
       { userIds: [r.userId] }
     ).catch((e) => console.warn("[Push] duty reminder failed", e));
