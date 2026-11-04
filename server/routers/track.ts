@@ -2,7 +2,8 @@ import { z } from "zod";
 import * as db from "../db";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { assertFunctionary } from "../_core/functionary";
-import { notifyTopicLater } from "../push";
+import { parseHelpers } from "@shared/jobs";
+import { recordTrackWork } from "../work";
 
 const CONDITIONS = [
   "Mycket bra",
@@ -34,22 +35,12 @@ export const trackRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       await assertFunctionary(ctx.user, "skidspar");
-      const name = ctx.user.name || ctx.user.email || "Okänd";
-      await db.logEffort({
-        kind: "draget",
+      return recordTrackWork({
         userId: ctx.user.id,
-        byName: name,
-        helpers: input.helpers?.trim() || null,
+        name: ctx.user.name || ctx.user.email || "Okänd",
+        helpers: parseHelpers(input.helpers),
+        photoUrl: input.photoUrl,
       });
-      notifyTopicLater(
-        "track_draget",
-        { title: "Spåret är nydraget ⛷️", body: `${name} har dragit skidspåret.`, url: "/skidspar" },
-        { throttleMs: 3 * 3600 * 1000 }
-      );
-      return db.updateTrackStatus({ dragetAt: new Date(), dragetBy: name,
-        ...(input.photoUrl
-          ? { photoUrl: input.photoUrl, photoAt: new Date(), photoBy: name }
-          : {}) });
     }),
 
   // Undo the latest draget marking.

@@ -486,3 +486,33 @@ export const dutyAbsences = mysqlTable("dutyAbsences", {
 });
 
 export type DutyAbsence = typeof dutyAbsences.$inferSelect;
+
+/**
+ * "Jag kan ploga 18–20 – vem hänger med?" A team member proposes a job with
+ * a time window; others answer yes/no.
+ */
+export const dutyJobs = mysqlTable("dutyJobs", {
+  id: int("id").autoincrement().primaryKey(),
+  area: mysqlEnum("area", ["hockeyrink", "skidspar"]).notNull(),
+  kind: mysqlEnum("kind", ["plog", "spol", "plog_spol", "spar", "annat"]).notNull(),
+  startsAt: timestamp("startsAt").notNull(),
+  endsAt: timestamp("endsAt").notNull(),
+  note: varchar("note", { length: 300 }),
+  /** Proposer's team in the area (null for e.g. admins outside a team). */
+  teamId: int("teamId"),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdByName: varchar("createdByName", { length: 120 }).notNull(),
+  status: mysqlEnum("status", ["open", "done", "cancelled"]).default("open").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DutyJob = typeof dutyJobs.$inferSelect;
+
+export const dutyJobResponses = mysqlTable("dutyJobResponses", {
+  id: int("id").autoincrement().primaryKey(),
+  jobId: int("jobId").notNull(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 120 }).notNull(),
+  answer: mysqlEnum("answer", ["yes", "no"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});

@@ -65,7 +65,7 @@ export const ENV = {
     // Optional explicit S3 endpoint; defaults to the account-derived URL.
     endpoint: process.env.R2_ENDPOINT ?? "",
     // Public base URL where the bucket is served (your own domain),
-    // e.g. https://media.antnasvinter.se
+    // e.g. https://media.jlco.app
     publicUrl: process.env.R2_PUBLIC_URL ?? "",
   },
 };

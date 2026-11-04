@@ -7,6 +7,7 @@ import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { BookOpen, ChevronDown, Pencil, Plus, ShieldCheck } from "lucide-react";
 import GuideBody from "@/components/GuideBody";
+import JobsBoard from "@/components/JobsBoard";
 import GuideEditor, { GUIDE_AREA_LABEL, type GuideArea, type GuideDraft } from "@/components/GuideEditor";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -93,7 +94,7 @@ export default function Funktionar() {
             Funktionär
           </h1>
           <p className="mt-2 text-muted-foreground max-w-2xl">
-            Guider, tankning, kvitton och utlägg. Syns bara för dig som är
+            Planera jobb, guider, tankning och kvitton. Syns bara för dig som är
             med i ett rinkjourlag eller spårjouren (och för admin).
           </p>
         </div>
@@ -126,6 +127,10 @@ export default function Funktionar() {
       ) : (
         <>
           <div className="container pt-6">
+            <JobsBoard />
+          </div>
+
+          <div className="container pt-8">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="flex items-center gap-2 text-2xl font-extrabold tracking-tight">
                 <BookOpen className="h-5 w-5 text-primary" /> Guider & tips

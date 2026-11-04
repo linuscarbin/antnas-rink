@@ -106,6 +106,19 @@ Det **första kontot som registreras blir automatiskt administratör** (ägare).
    Om R2 *inte* konfigureras faller appen tillbaka till disklagring i `UPLOAD_DIR`
    (montera då en persistent volym på `/data` i Coolify). Med R2 behövs ingen volym.
 
+### Egen domän (vinter.antnäs.se via Loopia)
+
+Domäner med å/ä/ö anges i kodad form (punycode) i DNS, Coolify och
+miljövariabler: `vinter.antnäs.se` = `vinter.xn--antns-jra.se`.
+
+1. **Loopia → DNS-editor för antnäs.se:** lägg till underdomänen `vinter`
+   med en **A-post** till Coolify-serverns IP-adress.
+2. **Coolify → Domains:** `https://vinter.xn--antns-jra.se` (fler domäner
+   kommasepareras). Sätt `PUBLIC_BASE_URL=https://vinter.xn--antns-jra.se`
+   och kör Redeploy – certifikatet hämtas automatiskt.
+3. Installerad app och notiser hör till adressen: byt domän innan ni bjuder
+   in alla, annars får de installera och slå på notiser igen.
+
 ### docker-compose (lokalt / referens)
 
 Ett `docker-compose.yml` finns med app + MySQL för att prova hela stacken lokalt:
@@ -140,6 +153,10 @@ Sajten är en installerbar webbapp med push-notiser – ingen App Store behövs.
   Markerar plogad/spolad/draget med foto, stänger rinken tillfälligt, ser
   *Funktionär*-sidan med guider (t.ex. förrådskod) samt tankning, kvitton och
   utlägg för sitt område. Behörigheten kontrolleras på servern.
+- **Planera jobb:** jourhavare föreslår "Jag kan ploga ikväll 18–20" under
+  *Funktionär*; laget får en notis och svarar *Jag kan* / *Kan inte*. När
+  jobbet markeras *Klart* uppdateras statusen (plogad/spolad/draget) med alla
+  som var med, och insatsen räknas i topplistan för var och en.
 - **Admin:** allt ovan för båda områdena + hanterar scheman, guider, kontakter,
   användare och bokningar via `/admin`. Gör en användare till admin under
   *Användare* i adminpanelen.

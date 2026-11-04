@@ -411,7 +411,12 @@ export default function Home() {
                 <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Wind className="h-4 w-4" />
                   {weatherQuery.data.windSpeed != null
-                    ? `${Math.round(weatherQuery.data.windSpeed)} m/s vind`
+                    ? `${Math.round(weatherQuery.data.windSpeed)} m/s vind${
+                        weatherQuery.data.windGusts != null &&
+                        Math.round(weatherQuery.data.windGusts) > Math.round(weatherQuery.data.windSpeed)
+                          ? ` (byar ${Math.round(weatherQuery.data.windGusts)})`
+                          : ""
+                      }`
                     : "—"}
                 </div>
                 <div
@@ -429,6 +434,11 @@ export default function Home() {
                     ? "Bra förhållanden för spolning."
                     : "Kan vara för varmt för spolning just nu."}
                 </div>
+                {weatherQuery.data.source && (
+                  <div className="mt-2 text-[11px] text-muted-foreground">
+                    Prognos för Antnäs · {weatherQuery.data.source}
+                  </div>
+                )}
               </>
             ) : (
               <p className="mt-2 text-sm text-muted-foreground">

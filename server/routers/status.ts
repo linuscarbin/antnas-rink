@@ -2,7 +2,8 @@ import { z } from "zod";
 import * as db from "../db";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { assertFunctionary } from "../_core/functionary";
-import { notifyTopicLater } from "../push";
+import { parseHelpers } from "@shared/jobs";
+import { recordRinkWork } from "../work";
 
 /** Returns Date of the start of the current winter season (Jul 1 -> Jun 30). */
 function seasonStart(now = new Date()): Date {
@@ -24,17 +25,12 @@ export const statusRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       await assertFunctionary(ctx.user, "hockeyrink");
-      const name = ctx.user.name || ctx.user.email || "Okänd";
-      await db.logEffort({
-        kind: "plogad",
+      return recordRinkWork("plogad", {
         userId: ctx.user.id,
-        byName: name,
-        helpers: input.helpers?.trim() || null,
+        name: ctx.user.name || ctx.user.email || "Okänd",
+        helpers: parseHelpers(input.helpers),
+        photoUrl: input.photoUrl,
       });
-      return db.updateRinkStatus({ plogadAt: new Date(), plogadBy: name,
-        ...(input.photoUrl
-          ? { photoUrl: input.photoUrl, photoAt: new Date(), photoBy: name }
-          : {}) });
     }),
 
   markSpolad: protectedProcedure
@@ -46,22 +42,12 @@ export const statusRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       await assertFunctionary(ctx.user, "hockeyrink");
-      const name = ctx.user.name || ctx.user.email || "Okänd";
-      await db.logEffort({
-        kind: "spolad",
+      return recordRinkWork("spolad", {
         userId: ctx.user.id,
-        byName: name,
-        helpers: input.helpers?.trim() || null,
+        name: ctx.user.name || ctx.user.email || "Okänd",
+        helpers: parseHelpers(input.helpers),
+        photoUrl: input.photoUrl,
       });
-      notifyTopicLater(
-        "rink_spolad",
-        { title: "Rinken är nyspolad 🧊", body: `${name} har spolat isen. Ta med skridskorna!`, url: "/" },
-        { throttleMs: 3 * 3600 * 1000 }
-      );
-      return db.updateRinkStatus({ spoladAt: new Date(), spoladBy: name,
-        ...(input.photoUrl
-          ? { photoUrl: input.photoUrl, photoAt: new Date(), photoBy: name }
-          : {}) });
     }),
 
   // Undo the latest plogad/spolad marking (clears timestamp + removes effort).
