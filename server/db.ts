@@ -34,6 +34,8 @@ import {
   InsertExpense,
   InsertChatMessage,
   InsertContact,
+  InsertSponsor,
+  sponsors,
   InsertDutySchedule,
   InsertFamily,
   InsertRefueling,
@@ -425,6 +427,30 @@ export async function updateContact(id: number, data: Partial<InsertContact>) {
 export async function deleteContact(id: number) {
   const db = await requireDb();
   await db.delete(contacts).where(eq(contacts.id, id));
+}
+
+/* ----------------------------- Sponsors --------------------------- */
+
+export async function listSponsors(onlyActive: boolean) {
+  const db = await requireDb();
+  const q = db.select().from(sponsors);
+  return (onlyActive ? q.where(eq(sponsors.active, true)) : q).orderBy(sponsors.sortOrder, sponsors.name);
+}
+
+export async function createSponsor(data: InsertSponsor) {
+  const db = await requireDb();
+  const result = await db.insert(sponsors).values(data).$returningId();
+  return result[0];
+}
+
+export async function updateSponsor(id: number, data: Partial<InsertSponsor>) {
+  const db = await requireDb();
+  await db.update(sponsors).set(data).where(eq(sponsors.id, id));
+}
+
+export async function deleteSponsor(id: number) {
+  const db = await requireDb();
+  await db.delete(sponsors).where(eq(sponsors.id, id));
 }
 
 /* ----------------------------- Bookings --------------------------- */

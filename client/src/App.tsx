@@ -17,6 +17,7 @@ import Arbetsdagar from "./pages/Arbetsdagar";
 import Notiser from "./pages/Notiser";
 import LagFamiljer from "./pages/LagFamiljer";
 import Skidspar from "./pages/Skidspar";
+import Sponsorer from "./pages/Sponsorer";
 import { trpc } from "./lib/trpc";
 import { FEATURES } from "@shared/const";
 
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/arbetsdagar" component={Arbetsdagar} />
       <Route path="/notiser" component={Notiser} />
+      <Route path="/sponsorer" component={Sponsorer} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

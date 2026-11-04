@@ -7,6 +7,7 @@ import {
   CalendarDays,
   CalendarRange,
   Hammer,
+  Heart,
   BookOpen,
   Settings,
   FolderOpen,
@@ -19,6 +20,7 @@ import { useState } from "react";
 import AdminBingo from "./admin/AdminBingo";
 import { FEATURES } from "@shared/const";
 import AdminBookings from "./admin/AdminBookings";
+import AdminSponsors from "./admin/AdminSponsors";
 import EventsBoard from "@/components/EventsBoard";
 import AdminDocs from "./admin/AdminDocs";
 import AdminContacts from "./admin/AdminContacts";
@@ -35,6 +37,7 @@ const TABS = [
   ...(FEATURES.bilbingo ? [{ id: "bingo", label: "Bilbingo", icon: Ticket } as const] : []),
   { id: "docs", label: "Dokument", icon: FolderOpen },
   { id: "contacts", label: "Kontakter", icon: Users },
+  { id: "sponsors", label: "Sponsorer", icon: Heart },
   { id: "bookings", label: "Bokningar", icon: CalendarRange },
   { id: "users", label: "Användare", icon: UsersRound },
   { id: "settings", label: "Inställningar", icon: Settings },
@@ -122,6 +125,7 @@ export default function Admin() {
           {tab === "duty" && <AdminDuty key="hockeyrink" area="hockeyrink" />}
           {tab === "skiduty" && <AdminDuty key="skidspar" area="skidspar" />}
           {tab === "events" && <EventsBoard />}
+          {tab === "sponsors" && <AdminSponsors />}
           {tab === "guides" && <AdminGuides />}
           {tab === "bingo" && <AdminBingo />}
           {tab === "docs" && <AdminDocs />}

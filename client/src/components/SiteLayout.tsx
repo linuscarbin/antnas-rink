@@ -10,6 +10,7 @@ import {
   type LucideIcon,
   FolderOpen,
   Bell,
+  Heart,
   MessageSquare,
   Snowflake,
   Sun,
@@ -20,6 +21,7 @@ import {
 import { ReactNode, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Link, useLocation } from "wouter";
+import { SponsorStrip } from "@/components/Sponsors";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -29,6 +31,7 @@ const WINTER_NAV: NavItem[] = [
   { href: "/anslagstavla", label: "Anslagstavla", icon: MessageSquare },
   { href: "/dokument", label: "Dokument", icon: FolderOpen },
   { href: "/kontakt", label: "Kontakt", icon: Users },
+  { href: "/sponsorer", label: "Sponsorer", icon: Heart },
 ];
 
 /**
@@ -55,9 +58,16 @@ const SUMMER_NAV: NavItem[] = [
   { href: "/kontakt", label: "Kontakt", icon: Users },
   { href: "/", label: "Hockeyrink", icon: Snowflake },
   { href: "/skidspar", label: "Skidspår", icon: Trees },
+  { href: "/sponsorer", label: "Sponsorer", icon: Heart },
 ];
 
-export default function SiteLayout({ children }: { children: ReactNode }) {
+export default function SiteLayout({
+  children,
+  hideSponsorStrip = false,
+}: {
+  children: ReactNode;
+  hideSponsorStrip?: boolean;
+}) {
   const { user, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -185,6 +195,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
 
       <main className="flex-1 pb-6 md:pb-0">{children}</main>
 
+      {!hideSponsorStrip && <SponsorStrip />}
       <footer className="border-t border-border/70 bg-background/70">
         <div className="container py-6 text-sm text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
           <span className="font-semibold text-foreground">Antnäs BK</span>

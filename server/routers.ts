@@ -18,6 +18,7 @@ import { refuelingsRouter } from "./routers/refuelings";
 import { scheduleRouter } from "./routers/schedule";
 import { settingsRouter } from "./routers/settings";
 import { skiDutyRouter } from "./routers/skiDuty";
+import { sponsorsRouter } from "./routers/sponsors";
 import { statusRouter } from "./routers/status";
 import { trackRouter } from "./routers/track";
 import { usersRouter } from "./routers/users";
@@ -47,6 +48,7 @@ export const appRouter = router({
   bingo: bingoRouter,
   settings: settingsRouter,
   documents: documentsRouter,
+  sponsors: sponsorsRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
+import { SponsorSpotlight } from "@/components/Sponsors";
 import CheckinWidget from "@/components/CheckinWidget";
 import VerdictCard from "@/components/VerdictCard";
 import PhotoPicker from "@/components/PhotoPicker";
@@ -312,6 +313,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <SponsorSpotlight area="hockeyrink" />
 
       <div className="container py-8 grid gap-6 lg:grid-cols-3">
         {/* Status cards */}

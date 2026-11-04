@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
+import { SponsorSpotlight } from "@/components/Sponsors";
 import { EventCard } from "@/components/EventsBoard";
 import { getIsoWeek } from "@shared/rink";
 import { BookOpen, Receipt, Snowflake, Trees, Undo2, Users } from "lucide-react";
@@ -164,6 +165,8 @@ export default function Skidspar() {
           </div>
         </div>
       </section>
+
+      <SponsorSpotlight area="skidspar" />
 
       <div className="container py-8 grid gap-6 lg:grid-cols-3">
         {/* Status */}

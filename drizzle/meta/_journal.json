@@ -162,6 +162,13 @@
       "when": 1793796550735,
       "tag": "0022_special_slayback",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1793820866869,
+      "tag": "0023_slimy_warpath",
+      "breakpoints": true
     }
   ]
 }
