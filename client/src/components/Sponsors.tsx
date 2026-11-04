@@ -91,7 +91,7 @@ export function SponsorSpotlight({ area }: { area: Area }) {
 }
 
 /**
- * Thin band under the header where the sponsors' logos roll by. Tapping
+ * Slim band at the bottom of the sticky header (always visible) where the sponsors' logos roll by. Tapping
  * one opens its site (or /sponsorer when it has none). Pauses on hover/
  * focus; with "reduce motion" it stands still and can be swiped instead.
  */
@@ -104,11 +104,11 @@ export function SponsorTicker() {
   const seconds = Math.max(20, half.length * 4);
   const item = (s: SponsorRow, key: string, hidden: boolean) => {
     const inner = (
-      <span className="flex h-9 items-center gap-2 px-5">
+      <span className="flex h-7 items-center px-4">
         {s.logoUrl ? (
-          <img src={s.logoUrl} alt={s.name} className="h-7 w-auto max-w-32 object-contain" loading="lazy" />
+          <img src={s.logoUrl} alt={s.name} className="h-5 w-auto max-w-24 object-contain" loading="lazy" />
         ) : (
-          <span className="whitespace-nowrap text-sm font-extrabold tracking-tight">{s.name}</span>
+          <span className="whitespace-nowrap text-xs font-bold tracking-tight">{s.name}</span>
         )}
       </span>
     );
@@ -125,7 +125,7 @@ export function SponsorTicker() {
   };
   return (
     <div
-      className="sponsor-ticker relative overflow-hidden border-b border-border/70 bg-white"
+      className="sponsor-ticker relative overflow-hidden border-t border-border/60 bg-white"
       aria-label="Våra sponsorer"
       role="region"
     >

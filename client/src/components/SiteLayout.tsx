@@ -18,7 +18,7 @@ import {
   Trees,
   Users,
 } from "lucide-react";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Link, useLocation } from "wouter";
 import { SponsorStrip, SponsorTicker } from "@/components/Sponsors";
@@ -71,6 +71,18 @@ export default function SiteLayout({
   const { user, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
+  // Sticky things below the header (hub tabs) need its real height, which
+  // varies with the tablet nav row and the sponsor band.
+  const headerRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const set = () => document.documentElement.style.setProperty("--header-h", `${el.offsetHeight}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const seasonQuery = trpc.settings.getSeason.useQuery();
   const season = seasonQuery.data?.season ?? "vinter";
   const isSummer = season === "sommar";
@@ -91,7 +103,7 @@ export default function SiteLayout({
 
   return (
     <div className="min-h-screen flex flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
+      <header ref={headerRef} className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
         <div className="container flex h-16 items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
@@ -191,9 +203,8 @@ export default function SiteLayout({
             })}
           </div>
         </nav>
+        {!hideSponsorStrip && <SponsorTicker />}
       </header>
-
-      {!hideSponsorStrip && <SponsorTicker />}
 
       <main className="flex-1 pb-6 md:pb-0">{children}</main>
 
