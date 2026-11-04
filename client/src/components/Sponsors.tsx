@@ -90,6 +90,58 @@ export function SponsorSpotlight({ area }: { area: Area }) {
   );
 }
 
+/**
+ * Slim band at the bottom of the sticky header (always visible) where the sponsors' logos roll by. Tapping
+ * one opens its site (or /sponsorer when it has none). Pauses on hover/
+ * focus; with "reduce motion" it stands still and can be swiped instead.
+ */
+export function SponsorTicker() {
+  const { data } = useSponsors();
+  if (!data?.length) return null;
+  // Repeat the list so one half is wider than any screen, then show two
+  // identical halves: sliding by -50% loops seamlessly.
+  const half = Array.from({ length: Math.max(1, Math.ceil(8 / data.length)) }, () => data).flat();
+  const seconds = Math.max(20, half.length * 4);
+  const item = (s: SponsorRow, key: string, hidden: boolean) => {
+    const inner = (
+      <span className="flex h-7 items-center px-4">
+        {s.logoUrl ? (
+          <img src={s.logoUrl} alt={s.name} className="h-5 w-auto max-w-24 object-contain" loading="lazy" />
+        ) : (
+          <span className="whitespace-nowrap text-xs font-bold tracking-tight">{s.name}</span>
+        )}
+      </span>
+    );
+    const common = { className: "shrink-0", ...(hidden ? { "aria-hidden": true, tabIndex: -1 } : {}) };
+    return s.url ? (
+      <a key={key} {...common} href={s.url} target="_blank" rel="noopener noreferrer sponsored">
+        {inner}
+      </a>
+    ) : (
+      <Link key={key} {...common} href="/sponsorer">
+        {inner}
+      </Link>
+    );
+  };
+  return (
+    <div
+      className="sponsor-ticker relative overflow-hidden border-t border-border/60 bg-white"
+      aria-label="Våra sponsorer"
+      role="region"
+    >
+      <div
+        className="sponsor-ticker-track flex w-max items-center"
+        style={{ ["--ticker-duration" as string]: `${seconds}s` }}
+      >
+        {half.map((s, i) => item(s, `a${i}`, i >= data.length))}
+        {half.map((s, i) => item(s, `b${i}`, true))}
+      </div>
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white" />
+    </div>
+  );
+}
+
 /** "Tack till våra sponsorer" logo row, shown above the footer on every page. */
 export function SponsorStrip() {
   const { data } = useSponsors();

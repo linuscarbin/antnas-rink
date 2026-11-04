@@ -29,7 +29,7 @@ export default function HubTabs<T extends string>({
   onChange: (t: T) => void;
 }) {
   return (
-    <div className="sticky top-16 z-30 border-b border-border/70 bg-background/90 backdrop-blur-md">
+    <div className="sticky top-[var(--header-h,4rem)] z-30 border-b border-border/70 bg-background/90 backdrop-blur-md">
       <div className="container flex items-center gap-3">
         <span className="hidden shrink-0 py-2 text-sm font-extrabold sm:block">{title}</span>
         <nav className="-mx-4 flex flex-1 gap-1 overflow-x-auto px-4 py-2 sm:mx-0 sm:px-0" aria-label={title}>
