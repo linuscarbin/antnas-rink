@@ -1,4 +1,3 @@
-import GuideBody from "@/components/GuideBody";
 import {
   Drawer,
   DrawerContent,
@@ -8,6 +7,10 @@ import {
 } from "@/components/ui/drawer";
 import { trpc } from "@/lib/trpc";
 import { ScrollText } from "lucide-react";
+import { lazy, Suspense } from "react";
+
+// The markdown renderer is heavy – load it when the sheet opens.
+const GuideBody = lazy(() => import("@/components/GuideBody"));
 
 type Area = "hockeyrink" | "skidspar";
 
@@ -49,7 +52,9 @@ export default function RulesButton({ area }: { area: Area }) {
               <ScrollText className="h-5 w-5 text-primary" /> {rules.title}
             </DrawerTitle>
           </DrawerHeader>
-          <GuideBody body={rules.body} />
+          <Suspense fallback={<div className="h-24 animate-pulse rounded-xl bg-muted" />}>
+            <GuideBody body={rules.body} />
+          </Suspense>
         </div>
       </DrawerContent>
     </Drawer>

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import compression from "compression";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
@@ -37,6 +38,8 @@ async function startServer() {
   // Behind Coolify's reverse proxy (Traefik/Caddy): trust X-Forwarded-* headers.
   app.set("trust proxy", 1);
   const server = createServer(app);
+  // gzip/brotli-negotiated compression for HTML, JS, CSS and API responses.
+  app.use(compression());
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ limit: "10mb", extended: true }));
 

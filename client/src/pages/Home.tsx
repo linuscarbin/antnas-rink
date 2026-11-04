@@ -13,7 +13,6 @@ import VerdictCard from "@/components/VerdictCard";
 import PhotoPicker from "@/components/PhotoPicker";
 import DutyWeeks, { ThisWeekDuty } from "@/components/DutyWeeks";
 import HubTabs, { useHubTab } from "@/components/HubTabs";
-import GuidesSection from "@/components/GuidesSection";
 import JobsBoard from "@/components/JobsBoard";
 import RefuelSection from "@/components/RefuelSection";
 import ExpenseSection from "@/components/ExpenseSection";
@@ -38,9 +37,12 @@ import {
   Undo2,
   Wind,
 } from "lucide-react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
+
+// Guides pull in the markdown renderer – only load it on the Info tab.
+const GuidesSection = lazy(() => import("@/components/GuidesSection"));
 
 function StatusCard({
   kind,
@@ -266,7 +268,11 @@ export default function Home() {
         </div>
       )}
 
-      {tab === "info" && <GuidesSection area="hockeyrink" />}
+      {tab === "info" && (
+        <Suspense fallback={<div className="container py-6"><div className="h-24 animate-pulse rounded-2xl bg-muted" /></div>}>
+          <GuidesSection area="hockeyrink" />
+        </Suspense>
+      )}
 
       {tab === "kostnader" && isRinkFunctionary && (
         <div className="pt-6">

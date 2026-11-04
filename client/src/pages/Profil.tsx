@@ -4,6 +4,7 @@ import SiteLayout from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -34,7 +35,10 @@ export default function Profil() {
     return (
       <SiteLayout>
         <div className="container py-12 text-center text-muted-foreground">
-          Du måste vara inloggad för att se din profil.
+          <p>Du måste vara inloggad för att se din profil.</p>
+          <Button className="mt-4" onClick={() => (window.location.href = getLoginUrl())}>
+            Logga in
+          </Button>
         </div>
       </SiteLayout>
     );

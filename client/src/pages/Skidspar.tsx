@@ -20,7 +20,6 @@ import { EventCard } from "@/components/EventsBoard";
 import { getIsoWeek } from "@shared/rink";
 import { BookOpen, Receipt, Snowflake, Trees, Undo2, Users } from "lucide-react";
 import HubTabs, { useHubTab } from "@/components/HubTabs";
-import GuidesSection from "@/components/GuidesSection";
 import JobsBoard from "@/components/JobsBoard";
 import RefuelSection from "@/components/RefuelSection";
 import ExpenseSection from "@/components/ExpenseSection";
@@ -30,8 +29,11 @@ import VerdictCard from "@/components/VerdictCard";
 import PhotoPicker from "@/components/PhotoPicker";
 import DutyWeeks, { ThisWeekDuty } from "@/components/DutyWeeks";
 import { trackVerdict } from "@shared/verdict";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
+
+// Guides pull in the markdown renderer – only load it on the Info tab.
+const GuidesSection = lazy(() => import("@/components/GuidesSection"));
 
 const CONDITIONS = ["Mycket bra", "Bra", "Hyfsat", "Dåligt", "Ej åkbart"] as const;
 
@@ -112,7 +114,11 @@ export default function Skidspar() {
         </div>
       )}
 
-      {tab === "info" && <GuidesSection area="skidspar" />}
+      {tab === "info" && (
+        <Suspense fallback={<div className="container py-6"><div className="h-24 animate-pulse rounded-2xl bg-muted" /></div>}>
+          <GuidesSection area="skidspar" />
+        </Suspense>
+      )}
 
       {tab === "kostnader" && isTrackFunctionary && (
         <div className="pt-6">
