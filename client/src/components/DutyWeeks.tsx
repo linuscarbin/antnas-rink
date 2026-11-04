@@ -127,7 +127,7 @@ function WeekCard({
                   {absent && !m.isMe && canCover && !info?.coveredByName && (
                     <Button
                       size="sm"
-                      className="ml-auto h-7 gap-1 text-xs"
+                      className="h-7 gap-1 px-2 text-xs"
                       disabled={pending}
                       onClick={() => onCover(m.id, true)}
                     >
@@ -138,7 +138,7 @@ function WeekCard({
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="ml-auto h-7 text-xs"
+                      className="h-7 px-2 text-xs"
                       disabled={pending}
                       onClick={() => onCover(m.id, false)}
                     >
@@ -149,7 +149,7 @@ function WeekCard({
                     <Button
                       size="sm"
                       variant={absent ? "outline" : "ghost"}
-                      className="ml-auto h-7 gap-1 bg-card text-xs"
+                      className="h-7 gap-1 bg-card px-2 text-xs"
                       disabled={pending}
                       onClick={() => onToggle(m.id, !absent)}
                     >
@@ -182,22 +182,25 @@ export function MemberLine({
   children?: React.ReactNode;
 }) {
   return (
-    <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-      <span className={`font-semibold ${absent ? "line-through text-muted-foreground" : ""}`}>{name}</span>
-      {absent &&
-        (coveredBy ? (
-          <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-            <Check className="h-3 w-3" /> {coveredBy} tar det
-          </span>
-        ) : (
-          <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-bold text-destructive">Förhinder</span>
-        ))}
-      {phone && (
-        <a href={`tel:${phone}`} className="inline-flex items-center gap-1 text-primary">
-          <Phone className="h-3 w-3" /> {formatPhone(phone)}
-        </a>
-      )}
-      {children}
+    <li className="flex items-center gap-2 text-sm">
+      {/* Name, status and phone wrap on the left; buttons keep their own column. */}
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5">
+        <span className={`font-semibold ${absent ? "line-through text-muted-foreground" : ""}`}>{name}</span>
+        {absent &&
+          (coveredBy ? (
+            <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+              <Check className="h-3 w-3" /> {coveredBy} tar det
+            </span>
+          ) : (
+            <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-bold text-destructive">Förhinder</span>
+          ))}
+        {phone && (
+          <a href={`tel:${phone}`} className="inline-flex items-center gap-1 whitespace-nowrap text-primary">
+            <Phone className="h-3 w-3" /> {formatPhone(phone)}
+          </a>
+        )}
+      </div>
+      {children && <div className="flex shrink-0 items-center gap-1">{children}</div>}
     </li>
   );
 }
