@@ -523,3 +523,37 @@ export const dutyJobResponses = mysqlTable("dutyJobResponses", {
   answer: mysqlEnum("answer", ["yes", "no"]).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
+
+/**
+ * Work days and other call-outs ("Arbetsdag på rinken", "Röjning längs
+ * spåret"). Sent to everyone with an account or only to functionaries.
+ */
+export const events = mysqlTable("events", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 160 }).notNull(),
+  area: mysqlEnum("area", ["hockeyrink", "skidspar", "alla"]).default("hockeyrink").notNull(),
+  startsAt: timestamp("startsAt").notNull(),
+  endsAt: timestamp("endsAt").notNull(),
+  location: varchar("location", { length: 160 }),
+  description: text("description"),
+  audience: mysqlEnum("audience", ["all", "functionaries"]).default("all").notNull(),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdByName: varchar("createdByName", { length: 120 }).notNull(),
+  status: mysqlEnum("status", ["active", "cancelled"]).default("active").notNull(),
+  /** Push call-out sent (deferred past quiet hours if needed). */
+  announced: boolean("announced").default(false).notNull(),
+  reminderSent: boolean("reminderSent").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EventRow = typeof events.$inferSelect;
+
+export const eventResponses = mysqlTable("eventResponses", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: int("eventId").notNull(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 120 }).notNull(),
+  answer: mysqlEnum("answer", ["yes", "maybe", "no"]).notNull(),
+  comment: varchar("comment", { length: 200 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});

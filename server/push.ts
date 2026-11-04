@@ -135,3 +135,22 @@ export function notifyConflict(area: "hockeyrink" | "skidspar", body: string): v
     );
   })().catch((e) => console.warn("[Push] conflict notify failed:", e));
 }
+
+/**
+ * Direct notification to specific people (e.g. a work-day call-out),
+ * regardless of which topics they picked. Quiet hours still apply unless
+ * `ignoreQuiet`.
+ */
+export async function notifyUsers(
+  userIds: number[],
+  msg: PushMessage,
+  opts: { ignoreQuiet?: boolean; now?: Date } = {}
+): Promise<{ sent: number; skipped?: "quiet" }> {
+  if (!opts.ignoreQuiet && isQuietTime(opts.now ?? new Date())) return { sent: 0, skipped: "quiet" };
+  await getVapidKeys();
+  const subs = await db.listPushSubscriptionsForUsers(Array.from(new Set(userIds)));
+  const results = await Promise.all(subs.map((s) => sendTo(s, msg)));
+  const sent = results.filter(Boolean).length;
+  if (subs.length) console.log(`[Push] direct: sent ${sent}/${subs.length}`);
+  return { sent };
+}

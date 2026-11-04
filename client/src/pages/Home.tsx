@@ -10,6 +10,7 @@ import CheckinWidget from "@/components/CheckinWidget";
 import VerdictCard from "@/components/VerdictCard";
 import PhotoPicker from "@/components/PhotoPicker";
 import { ThisWeekDuty } from "@/components/DutyWeeks";
+import { EventCard } from "@/components/EventsBoard";
 import { rinkVerdict, trackVerdict } from "@shared/verdict";
 import { Input } from "@/components/ui/input";
 import {
@@ -157,6 +158,8 @@ export default function Home() {
   });
   const trackQuery = trpc.track.get.useQuery();
   const closedQuery = trpc.settings.getRinkClosed.useQuery();
+  const eventsQuery = trpc.events.list.useQuery(undefined, { refetchInterval: 5 * 60 * 1000 });
+  const nextEvent = eventsQuery.data?.[0];
   const setPhoto = trpc.status.setPhoto.useMutation({
     onSuccess: () => {
       utils.status.get.invalidate();
@@ -271,6 +274,11 @@ export default function Home() {
             <div className="sm:col-span-2 lg:col-span-1">
               <CheckinWidget area="hockeyrink" />
             </div>
+            {nextEvent && (
+              <div className="sm:col-span-2 lg:col-span-3">
+                <EventCard e={nextEvent} compact />
+              </div>
+            )}
           </div>
         </div>
       </section>

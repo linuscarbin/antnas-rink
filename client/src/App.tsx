@@ -16,6 +16,7 @@ import Dokument from "./pages/Dokument";
 import Funktionar from "./pages/Funktionar";
 import Info from "./pages/Info";
 import Konto from "./pages/Konto";
+import Arbetsdagar from "./pages/Arbetsdagar";
 import Notiser from "./pages/Notiser";
 import LagFamiljer from "./pages/LagFamiljer";
 import Schema from "./pages/Schema";
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/funktionar" component={Funktionar} />
       <Route path="/info" component={Info} />
+      <Route path="/arbetsdagar" component={Arbetsdagar} />
       <Route path="/notiser" component={Notiser} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
