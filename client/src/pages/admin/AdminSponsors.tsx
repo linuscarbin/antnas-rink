@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
-import { EyeOff, Pencil, Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -173,6 +173,14 @@ export default function AdminSponsors() {
   const onError = (e: { message: string }) => toast.error(e.message);
   const create = trpc.sponsors.create.useMutation({ onSuccess: () => done("Sponsorn är tillagd."), onError });
   const update = trpc.sponsors.update.useMutation({ onSuccess: () => done("Sponsorn är uppdaterad."), onError });
+  const setActive = trpc.sponsors.setActive.useMutation({
+    onSuccess: (_r, v) => {
+      utils.sponsors.adminList.invalidate();
+      utils.sponsors.list.invalidate();
+      toast.success(v.active ? "Sponsorn visas nu." : "Sponsorn är dold.");
+    },
+    onError,
+  });
   const del = trpc.sponsors.delete.useMutation({ onSuccess: () => done("Sponsorn är borttagen."), onError });
 
   function save(d: Draft) {
@@ -205,7 +213,7 @@ export default function AdminSponsors() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
           Sponsorer visas i en rad längst ner på alla sidor och på sidan Sponsorer. Huvudsponsorer visas även stort
-          på Rinkens och Skidspårets översikt.
+          på Rinkens och Skidspårets översikt. Använd reglaget för att snabbt visa eller dölja en sponsor.
         </p>
         {!editing && (
           <Button
@@ -242,7 +250,7 @@ export default function AdminSponsors() {
             ) : (
               <div key={s.id} className={`iso-card flex items-center gap-3 p-3 ${s.active ? "" : "opacity-60"}`}>
                 <span className="grid h-14 w-20 shrink-0 place-items-center rounded-lg bg-white p-1.5 ring-1 ring-border">
-                  <SponsorLogo s={s} className="max-h-11" />
+                  <SponsorLogo s={s} className="max-h-11" small />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2 font-bold">
@@ -252,18 +260,23 @@ export default function AdminSponsors() {
                         Huvudsponsor · {AREA_LABEL[s.area]}
                       </span>
                     )}
-                    {!s.active && (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-                        <EyeOff className="h-3 w-3" /> Dold
-                      </span>
-                    )}
                   </div>
                   {s.text && <div className="truncate text-sm text-muted-foreground">{s.text}</div>}
                 </div>
+                <label className="flex shrink-0 flex-col items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                  <Switch
+                    checked={s.active}
+                    disabled={setActive.isPending}
+                    onCheckedChange={(active) => setActive.mutate({ id: s.id, active })}
+                    aria-label={s.active ? `Dölj ${s.name}` : `Visa ${s.name}`}
+                  />
+                  {s.active ? "Visas" : "Dold"}
+                </label>
                 <Button
-                  size="sm"
+                  size="icon"
                   variant="ghost"
-                  className="shrink-0 gap-1"
+                  className="shrink-0"
+                  aria-label={`Ändra ${s.name}`}
                   onClick={() =>
                     setEditing({
                       id: s.id,
@@ -278,7 +291,7 @@ export default function AdminSponsors() {
                     })
                   }
                 >
-                  <Pencil className="h-3.5 w-3.5" /> Ändra
+                  <Pencil className="h-4 w-4" />
                 </Button>
               </div>
             )

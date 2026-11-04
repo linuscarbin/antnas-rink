@@ -29,11 +29,26 @@ function SponsorLink({ s, className, children }: { s: SponsorRow; className?: st
 }
 
 /** Logo, or the name as a word mark when there is no logo. */
-export function SponsorLogo({ s, className = "h-12" }: { s: SponsorRow; className?: string }) {
+export function SponsorLogo({
+  s,
+  className = "h-12",
+  small = false,
+}: {
+  s: SponsorRow;
+  className?: string;
+  /** Tiny box (admin list): smaller word mark that wraps. */
+  small?: boolean;
+}) {
   return s.logoUrl ? (
     <img src={s.logoUrl} alt={s.name} loading="lazy" className={`${className} w-auto max-w-full object-contain`} />
   ) : (
-    <span className="text-lg font-extrabold tracking-tight">{s.name}</span>
+    <span
+      className={`line-clamp-2 break-words text-center font-extrabold leading-tight tracking-tight ${
+        small ? "text-xs" : "text-lg"
+      }`}
+    >
+      {s.name}
+    </span>
   );
 }
 

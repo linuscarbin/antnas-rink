@@ -45,6 +45,14 @@ export const sponsorsRouter = router({
       return { success: true } as const;
     }),
 
+  // One-tap show/hide from the admin list.
+  setActive: adminProcedure
+    .input(z.object({ id: z.number().int(), active: z.boolean() }))
+    .mutation(async ({ input }) => {
+      await db.updateSponsor(input.id, { active: input.active });
+      return { success: true } as const;
+    }),
+
   delete: adminProcedure.input(z.object({ id: z.number().int() })).mutation(async ({ input }) => {
     await db.deleteSponsor(input.id);
     return { success: true } as const;
