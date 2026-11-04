@@ -21,7 +21,7 @@ import {
 import { ReactNode, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Link, useLocation } from "wouter";
-import { SponsorStrip } from "@/components/Sponsors";
+import { SponsorStrip, SponsorTicker } from "@/components/Sponsors";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -192,6 +192,8 @@ export default function SiteLayout({
           </div>
         </nav>
       </header>
+
+      {!hideSponsorStrip && <SponsorTicker />}
 
       <main className="flex-1 pb-6 md:pb-0">{children}</main>
 
