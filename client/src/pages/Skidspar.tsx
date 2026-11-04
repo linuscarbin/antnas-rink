@@ -55,9 +55,13 @@ export default function Skidspar() {
   ];
   const [tab, setTab] = useHubTab(tabs, "oversikt");
   const utils = trpc.useUtils();
-  const statusQuery = trpc.track.get.useQuery();
+  // Same refresh rate as the rink status.
+  const statusQuery = trpc.track.get.useQuery(undefined, { refetchInterval: 2 * 60 * 1000 });
   const eventsQuery = trpc.events.list.useQuery(undefined, { refetchInterval: 5 * 60 * 1000 });
-  const nextEvent = eventsQuery.data?.find((e) => e.area !== "hockeyrink");
+  const nextEvent = eventsQuery.data?.find(
+    // Upcoming or ongoing only – the list also keeps work days that just ended.
+    (e) => e.area !== "hockeyrink" && new Date(e.endsAt).getTime() > Date.now()
+  );
   const [now] = useState(() => new Date());
 
   const [helpers, setHelpers] = useState("");
@@ -66,6 +70,9 @@ export default function Skidspar() {
   const invalidateTrack = () => {
     utils.track.get.invalidate();
     utils.track.leaderboard.invalidate();
+    // Marking by hand also completes planned jobs (Planera jobb + lagchatt).
+    utils.jobs.list.invalidate();
+    utils.teamChat.list.invalidate();
   };
   const markDraget = trpc.track.markDraget.useMutation({
     onSuccess: () => {
