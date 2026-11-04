@@ -14,10 +14,15 @@ import {
  */
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
-  /** Email is the login identifier (unique). */
-  email: varchar("email", { length: 320 }).notNull().unique(),
+  /** Optional e-mail (unique). Login works with e-mail or phone number. */
+  email: varchar("email", { length: 320 }).unique(),
   /** bcrypt password hash for self-hosted email+password auth. */
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  /** False for invited accounts until they pick their own password. */
+  passwordSet: boolean("passwordSet").default(true).notNull(),
+  /** sha256 of a one-time link token (invite or password reset). */
+  accountTokenHash: varchar("accountTokenHash", { length: 64 }),
+  accountTokenExpiresAt: timestamp("accountTokenExpiresAt"),
   name: varchar("name", { length: 160 }),
   /** Optional phone number, used for contact/duty display. */
   phone: varchar("phone", { length: 40 }),

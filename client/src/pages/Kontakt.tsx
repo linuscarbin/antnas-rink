@@ -2,6 +2,7 @@ import SiteLayout from "@/components/SiteLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { formatPhone } from "@shared/user";
 import { Mail, Phone, UserRound } from "lucide-react";
 
 export default function Kontakt() {
@@ -49,7 +50,7 @@ export default function Kontakt() {
                       className="flex items-center gap-2 text-foreground hover:text-primary"
                     >
                       <Phone className="h-4 w-4 text-muted-foreground" />
-                      {c.phone}
+                      {formatPhone(c.phone)}
                     </a>
                   )}
                   {c.email && (

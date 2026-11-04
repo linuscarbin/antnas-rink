@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { displayName } from "@shared/user";
 import { z } from "zod";
 import { ENV } from "../_core/env";
 import * as db from "../db";
@@ -46,7 +47,7 @@ export const chatRouter = router({
       const imageUrl = ownImageUrl(input.imageUrl);
       return db.createChatMessage({
         userId: ctx.user.id,
-        authorName: ctx.user.name || ctx.user.email || "Okänd",
+        authorName: displayName(ctx.user),
         content: text,
         imageUrl,
       });

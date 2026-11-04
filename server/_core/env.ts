@@ -81,3 +81,8 @@ export function isR2Configured(): boolean {
       (r.accountId || r.endpoint)
   );
 }
+
+/** True when e-mail can actually be sent (Resend API key configured). */
+export function isMailConfigured(): boolean {
+  return Boolean(ENV.resendApiKey);
+}

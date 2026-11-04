@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { displayName } from "@shared/user";
 import { z } from "zod";
 import * as db from "../db";
 import {
@@ -67,7 +68,7 @@ export const expensesRouter = router({
       return db.createExpense({
         area: input.area,
         userId: ctx.user.id,
-        responsibleName: ctx.user.name || ctx.user.email || "Okänd",
+        responsibleName: displayName(ctx.user),
         amountOre: Math.round(input.amountSek * 100),
         category: input.category?.trim() || null,
         paymentMethod: input.paymentMethod,

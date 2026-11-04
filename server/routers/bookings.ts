@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { displayName } from "@shared/user";
 import { z } from "zod";
 import { ZONES } from "@shared/rink";
 import * as db from "../db";
@@ -81,7 +82,7 @@ export const bookingsRouter = router({
 
       return db.createBooking({
         userId: ctx.user.id,
-        bookedByName: ctx.user.name || ctx.user.email || "Okänd",
+        bookedByName: displayName(ctx.user),
         title: input.title,
         zone: input.zone,
         startTime: start,

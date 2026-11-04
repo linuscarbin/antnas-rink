@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { displayName } from "@shared/user";
 import { z } from "zod";
 import * as db from "../db";
 import { emailLayout, esc, sendEmail } from "../email";
@@ -64,7 +65,7 @@ export const dutyTeamsRouter = router({
       if (input.userId) {
         const u = await db.getUserById(input.userId);
         if (!u) throw new TRPCError({ code: "NOT_FOUND", message: "Användaren finns inte." });
-        name = name || u.name || u.email;
+        name = name || displayName(u);
         phone = phone || u.phone || null;
       }
       if (!name) throw new TRPCError({ code: "BAD_REQUEST", message: "Ange ett namn." });
@@ -130,7 +131,7 @@ export const dutyTeamsRouter = router({
         const text = `${member.name} (${team.name}) kan inte ${t.jour} vecka ${input.week}.`;
         const admins = await db.listAdmins();
         await sendEmail({
-          to: admins.map((a) => a.email),
+          to: admins.map((a) => a.email).filter((e): e is string => Boolean(e)),
           subject: `Förhinder: ${t.jour} vecka ${input.week}`,
           html: emailLayout(
             `Förhinder i ${t.jour}`,

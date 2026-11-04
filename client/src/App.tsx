@@ -15,6 +15,7 @@ import Bilbingo from "./pages/Bilbingo";
 import Dokument from "./pages/Dokument";
 import Funktionar from "./pages/Funktionar";
 import Info from "./pages/Info";
+import Konto from "./pages/Konto";
 import Notiser from "./pages/Notiser";
 import LagFamiljer from "./pages/LagFamiljer";
 import Schema from "./pages/Schema";
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/anslagstavla" component={Anslagstavla} />
       <Route path="/kontakt" component={Kontakt} />
       <Route path="/login" component={Login} />
+      <Route path="/konto/:token" component={Konto} />
       <Route path="/profil" component={Profil} />
       <Route path="/admin" component={Admin} />
       <Route path="/funktionar" component={Funktionar} />

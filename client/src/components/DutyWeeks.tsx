@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDutyWeeks, type DutyArea, type DutyWeek } from "@/hooks/useDutyWeeks";
 import { trpc } from "@/lib/trpc";
 import { getIsoWeek } from "@shared/rink";
+import { formatPhone } from "@shared/user";
 import { AlertTriangle, Phone } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -138,7 +139,7 @@ export function MemberLine({
       )}
       {phone && (
         <a href={`tel:${phone}`} className="inline-flex items-center gap-1 text-primary">
-          <Phone className="h-3 w-3" /> {phone}
+          <Phone className="h-3 w-3" /> {formatPhone(phone)}
         </a>
       )}
       {children}

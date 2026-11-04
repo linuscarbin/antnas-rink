@@ -356,7 +356,7 @@ function TeamCard({
   onRemove,
 }: {
   team: TeamView;
-  users: { id: number; name: string | null; email: string; phone: string | null }[];
+  users: { id: number; name: string | null; email: string | null; phone: string | null }[];
   onRename: (name: string) => void;
   onDelete: () => void;
   onAdd: (m: { userId?: number | null; name?: string; phone?: string }) => void;
@@ -432,7 +432,7 @@ function TeamCard({
               <SelectItem value="manual">Utan konto (skriv namn)</SelectItem>
               {users.map((u) => (
                 <SelectItem key={u.id} value={String(u.id)}>
-                  {u.name || u.email}
+                  {u.name || u.email || u.phone}
                 </SelectItem>
               ))}
             </SelectContent>

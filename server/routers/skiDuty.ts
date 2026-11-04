@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { displayName } from "@shared/user";
 import { z } from "zod";
 import * as db from "../db";
 import { rotateTeams } from "@shared/rink";
@@ -93,7 +94,7 @@ export const skiDutyRouter = router({
       const updated = await db.setSkiDutyConflict(input.id, input.conflict);
 
       if (input.conflict && updated) {
-        const reporter = ctx.user.name || ctx.user.email || "En användare";
+        const reporter = displayName(ctx.user);
         const admins = await db.listAdmins();
         const adminEmails = admins
           .map((a) => a.email)

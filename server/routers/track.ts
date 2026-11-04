@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { displayName } from "@shared/user";
 import * as db from "../db";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { assertFunctionary } from "../_core/functionary";
@@ -37,7 +38,7 @@ export const trackRouter = router({
       await assertFunctionary(ctx.user, "skidspar");
       return recordTrackWork({
         userId: ctx.user.id,
-        name: ctx.user.name || ctx.user.email || "Okänd",
+        name: displayName(ctx.user),
         helpers: parseHelpers(input.helpers),
         photoUrl: input.photoUrl,
       });
@@ -79,7 +80,7 @@ export const trackRouter = router({
     .input(z.object({ photoUrl: z.string().max(512).regex(/^(https?:\/\/|\/uploads\/)/).nullable() }))
     .mutation(async ({ ctx, input }) => {
       await assertFunctionary(ctx.user, "skidspar");
-      const name = ctx.user.name || ctx.user.email || "Okänd";
+      const name = displayName(ctx.user);
       return db.updateTrackStatus(
         input.photoUrl
           ? { photoUrl: input.photoUrl, photoAt: new Date(), photoBy: name }

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { displayName } from "@shared/user";
 import * as db from "../db";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 
@@ -27,7 +28,7 @@ export const documentsRouter = router({
         category: input.category || null,
         fileUrl: input.fileUrl,
         fileName: input.fileName || null,
-        uploadedByName: ctx.user.name || ctx.user.email || "Admin",
+        uploadedByName: displayName(ctx.user),
       });
       return { success: true } as const;
     }),

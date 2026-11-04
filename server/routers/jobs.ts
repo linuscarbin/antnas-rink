@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { displayName } from "@shared/user";
 import { z } from "zod";
 import { getIsoWeek } from "@shared/rink";
 import { formatJobWindow, JOB_KIND_LABEL, JOB_KINDS } from "@shared/jobs";
@@ -86,7 +87,7 @@ export const jobsRouter = router({
     .mutation(async ({ ctx, input }) => {
       await assertFunctionary(ctx.user, input.area);
       validateWindow(input.startsAt, input.endsAt);
-      const name = ctx.user.name || ctx.user.email;
+      const name = displayName(ctx.user);
       const teamId = (await db.teamIdsForUser(ctx.user.id, input.area))[0] ?? null;
       const job = {
         area: input.area,
@@ -127,7 +128,7 @@ export const jobsRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Jobbet finns inte längre." });
       }
       await assertFunctionary(ctx.user, job.area);
-      const name = ctx.user.name || ctx.user.email;
+      const name = displayName(ctx.user);
       await db.setDutyJobResponse(job.id, ctx.user.id, name, input.answer);
       if (input.answer === "yes" && job.createdByUserId !== ctx.user.id) {
         notifyTopicLater(
