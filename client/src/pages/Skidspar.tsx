@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
+import { EventCard } from "@/components/EventsBoard";
 import { getIsoWeek } from "@shared/rink";
 import { BookOpen, Receipt, Snowflake, Trees, Undo2, Users } from "lucide-react";
 import HubTabs, { useHubTab } from "@/components/HubTabs";
@@ -22,7 +23,6 @@ import JobsBoard from "@/components/JobsBoard";
 import RefuelSection from "@/components/RefuelSection";
 import ExpenseSection from "@/components/ExpenseSection";
 import { Leaderboard } from "./Home";
-import CheckinWidget from "@/components/CheckinWidget";
 import RulesButton from "@/components/RulesButton";
 import VerdictCard from "@/components/VerdictCard";
 import PhotoPicker from "@/components/PhotoPicker";
@@ -52,6 +52,8 @@ export default function Skidspar() {
   const [tab, setTab] = useHubTab(tabs, "oversikt");
   const utils = trpc.useUtils();
   const statusQuery = trpc.track.get.useQuery();
+  const eventsQuery = trpc.events.list.useQuery(undefined, { refetchInterval: 5 * 60 * 1000 });
+  const nextEvent = eventsQuery.data?.find((e) => e.area !== "hockeyrink");
   const [now] = useState(() => new Date());
 
   const [helpers, setHelpers] = useState("");
@@ -136,7 +138,7 @@ export default function Skidspar() {
               <RulesButton area="skidspar" />
             </div>
           </div>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 max-w-4xl">
+          <div className="mt-6 grid max-w-xl gap-4">
             <VerdictCard
               label="Skidspåret"
               loading={statusQuery.isLoading}
@@ -158,7 +160,7 @@ export default function Skidspar() {
                   : null
               }
             />
-            <CheckinWidget area="skidspar" />
+            {nextEvent && <EventCard e={nextEvent} compact />}
           </div>
         </div>
       </section>
