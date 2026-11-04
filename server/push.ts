@@ -1,5 +1,5 @@
 import webpush from "web-push";
-import { isQuietTime, type PushTopic } from "@shared/push";
+import { isQuietTime, jourUrl, type PushTopic } from "@shared/push";
 import * as db from "./db";
 import { ENV } from "./_core/env";
 
@@ -130,7 +130,7 @@ export function notifyConflict(area: "hockeyrink" | "skidspar", body: string): v
     const userIds = await db.listFunctionaryUserIds(area);
     await notifyTopic(
       "duty_conflict",
-      { title: "Förhinder i jouren ⚠️", body, url: area === "hockeyrink" ? "/schema" : "/skidspar" },
+      { title: "Förhinder i jouren ⚠️", body, url: jourUrl(area) },
       { userIds }
     );
   })().catch((e) => console.warn("[Push] conflict notify failed:", e));

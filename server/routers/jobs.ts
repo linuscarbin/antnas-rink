@@ -6,6 +6,7 @@ import { formatJobWindow, JOB_KIND_LABEL, JOB_KINDS } from "@shared/jobs";
 import * as db from "../db";
 import { assertFunctionary, functionaryAreas } from "../_core/functionary";
 import { protectedProcedure, router } from "../_core/trpc";
+import { jourUrl } from "@shared/push";
 import { notifyTopicLater } from "../push";
 import { recordRinkWork, recordTrackWork } from "../work";
 
@@ -110,7 +111,7 @@ export const jobsRouter = router({
           {
             title: `${name} kan ${jobText(job)}`,
             body: `${input.note ? `${input.note} – ` : ""}Kan du hänga med? Svara i appen.`,
-            url: "/funktionar",
+            url: jourUrl(job.area),
             tag: `job-${id}`,
           },
           { userIds: Array.from(new Set(userIds)) }
@@ -133,7 +134,7 @@ export const jobsRouter = router({
       if (input.answer === "yes" && job.createdByUserId !== ctx.user.id) {
         notifyTopicLater(
           "duty_jobs",
-          { title: `${name} kan också ✅`, body: `Till ${jobText(job)}.`, url: "/funktionar", tag: `job-${job.id}` },
+          { title: `${name} kan också ✅`, body: `Till ${jobText(job)}.`, url: jourUrl(job.area), tag: `job-${job.id}` },
           { userIds: [job.createdByUserId] }
         );
       }
@@ -171,7 +172,7 @@ export const jobsRouter = router({
         if (yesIds.length) {
           notifyTopicLater(
             "duty_jobs",
-            { title: "Jobb inställt", body: `${job.createdByName} har ställt in: ${jobText(job)}.`, url: "/funktionar", tag: `job-${job.id}` },
+            { title: "Jobb inställt", body: `${job.createdByName} har ställt in: ${jobText(job)}.`, url: jourUrl(job.area), tag: `job-${job.id}` },
             { userIds: yesIds }
           );
         }
@@ -217,7 +218,7 @@ export const jobsRouter = router({
         if (yesIds.length) {
           notifyTopicLater(
             "duty_jobs",
-            { title: "Ändrat jobb", body: `${job.createdByName} har ändrat till: ${jobText(updated)}.`, url: "/funktionar", tag: `job-${job.id}` },
+            { title: "Ändrat jobb", body: `${job.createdByName} har ändrat till: ${jobText(updated)}.`, url: jourUrl(job.area), tag: `job-${job.id}` },
             { userIds: yesIds }
           );
         }

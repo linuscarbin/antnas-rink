@@ -6,6 +6,7 @@ import { getLoginUrl } from "@/const";
 import {
   CalendarDays,
   CalendarRange,
+  Hammer,
   BookOpen,
   Settings,
   FolderOpen,
@@ -18,6 +19,7 @@ import { useState } from "react";
 import AdminBingo from "./admin/AdminBingo";
 import { FEATURES } from "@shared/const";
 import AdminBookings from "./admin/AdminBookings";
+import EventsBoard from "@/components/EventsBoard";
 import AdminDocs from "./admin/AdminDocs";
 import AdminContacts from "./admin/AdminContacts";
 import AdminDuty from "./admin/AdminDuty";
@@ -28,6 +30,7 @@ import AdminUsers from "./admin/AdminUsers";
 const TABS = [
   { id: "duty", label: "Rinkjour", icon: CalendarDays },
   { id: "skiduty", label: "Spårjour", icon: Trees },
+  { id: "events", label: "Arbetsdagar", icon: Hammer },
   { id: "guides", label: "Guider", icon: BookOpen },
   ...(FEATURES.bilbingo ? [{ id: "bingo", label: "Bilbingo", icon: Ticket } as const] : []),
   { id: "docs", label: "Dokument", icon: FolderOpen },
@@ -91,7 +94,7 @@ export default function Admin() {
       <div className="container py-8">
         <h1 className="text-3xl font-extrabold tracking-tight">Adminpanel</h1>
         <p className="text-muted-foreground">
-          Hantera jourscheman, kontakter, bokningar, användare och påminnelser.
+          Hantera jourscheman, arbetsdagar, kontakter, bokningar, användare och påminnelser.
         </p>
 
         <div className="-mx-4 mt-5 flex gap-2 overflow-x-auto border-b border-border/60 px-4 pb-3 sm:mx-0 sm:flex-wrap sm:px-0">
@@ -118,6 +121,7 @@ export default function Admin() {
         <div className="mt-6">
           {tab === "duty" && <AdminDuty key="hockeyrink" area="hockeyrink" />}
           {tab === "skiduty" && <AdminDuty key="skidspar" area="skidspar" />}
+          {tab === "events" && <EventsBoard />}
           {tab === "guides" && <AdminGuides />}
           {tab === "bingo" && <AdminBingo />}
           {tab === "docs" && <AdminDocs />}

@@ -4,16 +4,12 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { FEATURES } from "@shared/const";
 import {
-  CalendarDays,
   LayoutDashboard,
   LogOut,
   Menu,
-  ShieldCheck,
   type LucideIcon,
   FolderOpen,
-  Info,
   Bell,
-  Hammer,
   MessageSquare,
   Snowflake,
   Sun,
@@ -28,23 +24,21 @@ import { Link, useLocation } from "wouter";
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
 const WINTER_NAV: NavItem[] = [
-  { href: "/", label: "Hockeyrink", icon: Snowflake },
-  { href: "/skidspar", label: "Skidspår", icon: Trees },
-  { href: "/schema", label: "Rinkjour", icon: CalendarDays },
-  { href: "/boka", label: "Boka", icon: CalendarDays },
+  { href: "/", label: "Rinken", icon: Snowflake },
+  { href: "/skidspar", label: "Skidspåret", icon: Trees },
   { href: "/anslagstavla", label: "Anslagstavla", icon: MessageSquare },
-  { href: "/arbetsdagar", label: "Arbetsdagar", icon: Hammer },
-  { href: "/info", label: "Regler & info", icon: Info },
   { href: "/dokument", label: "Dokument", icon: FolderOpen },
   { href: "/kontakt", label: "Kontakt", icon: Users },
 ];
 
-/** Bottom bar on mobile: the four most used pages + "Mer". */
+/**
+ * Bottom bar on mobile. Rinken and Skidspåret are hubs: booking, duty,
+ * rules and costs are tabs inside them, shown depending on your role.
+ */
 const WINTER_TABS: NavItem[] = [
   { href: "/", label: "Rinken", icon: Snowflake },
   { href: "/skidspar", label: "Skidspår", icon: Trees },
   { href: "/anslagstavla", label: "Tavlan", icon: MessageSquare },
-  { href: "/schema", label: "Rinkjour", icon: CalendarDays },
 ];
 
 const SUMMER_TABS: NavItem[] = [
@@ -64,9 +58,7 @@ const SUMMER_NAV: NavItem[] = [
 ];
 
 export default function SiteLayout({ children }: { children: ReactNode }) {
-  const { user, isAuthenticated, logout, isRinkFunctionary, isTrackFunctionary } =
-    useAuth();
-  const isFunctionary = isRinkFunctionary || isTrackFunctionary;
+  const { user, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const seasonQuery = trpc.settings.getSeason.useQuery();
@@ -80,9 +72,6 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       ? []
       : [{ href: "/bilbingo", label: "Bilbingo", icon: Ticket }]),
     { href: "/notiser", label: "Notiser & app", icon: Bell },
-    ...(isFunctionary
-      ? [{ href: "/funktionar", label: "Funktionär", icon: ShieldCheck }]
-      : []),
     ...(user?.role === "admin"
       ? [{ href: "/admin", label: "Admin", icon: LayoutDashboard }]
       : []),
@@ -103,7 +92,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
             </span>
           </Link>
 
-          <nav className="hidden xl:flex items-center gap-0.5">
+          <nav className="hidden lg:flex items-center gap-0.5">
             {nav.map((item) => {
               const active = location === item.href;
               return (
@@ -128,14 +117,6 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
                 <Bell className="h-4 w-4" />
               </Button>
             </Link>
-            {isFunctionary && (
-              <Link href="/funktionar" className="hidden md:block">
-                <Button variant="outline" size="sm" className="bg-card gap-1.5" title="Funktionär" aria-label="Funktionär">
-                  <ShieldCheck className="h-4 w-4" />
-                  <span className="hidden 2xl:inline">Funktionär</span>
-                </Button>
-              </Link>
-            )}
             {user?.role === "admin" && (
               <Link href="/admin" className="hidden md:block">
                 <Button variant="outline" size="sm" className="bg-card gap-1.5" title="Admin" aria-label="Admin">
@@ -180,7 +161,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
         </div>
 
         {/* Tablet nav (md–lg): compact row */}
-        <nav className="hidden md:block xl:hidden border-t border-border/60 bg-background/90">
+        <nav className="hidden md:block lg:hidden border-t border-border/60 bg-background/90">
           <div className="container flex items-center gap-1 overflow-x-auto py-2">
             {nav.map((item) => {
               const active = location === item.href;
@@ -216,7 +197,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
         className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 backdrop-blur-md"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="grid grid-cols-5">
+        <div className="grid" style={{ gridTemplateColumns: `repeat(${tabs.length + 1}, minmax(0, 1fr))` }}>
           {tabs.map((item) => {
             const active = location === item.href;
             const Icon = item.icon;

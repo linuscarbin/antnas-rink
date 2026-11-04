@@ -9,11 +9,22 @@ import { trpc } from "@/lib/trpc";
 import CheckinWidget from "@/components/CheckinWidget";
 import VerdictCard from "@/components/VerdictCard";
 import PhotoPicker from "@/components/PhotoPicker";
-import { ThisWeekDuty } from "@/components/DutyWeeks";
+import DutyWeeks, { ThisWeekDuty } from "@/components/DutyWeeks";
+import HubTabs, { useHubTab } from "@/components/HubTabs";
+import GuidesSection from "@/components/GuidesSection";
+import JobsBoard from "@/components/JobsBoard";
+import RefuelSection from "@/components/RefuelSection";
+import ExpenseSection from "@/components/ExpenseSection";
+import { BookingSection } from "@/pages/Boka";
 import { EventCard } from "@/components/EventsBoard";
+import RulesButton from "@/components/RulesButton";
 import { rinkVerdict, trackVerdict } from "@shared/verdict";
 import { Input } from "@/components/ui/input";
 import {
+  BookOpen,
+  CalendarDays,
+  Receipt,
+  Users,
   Bell,
   CheckCircle2,
   CloudSnow,
@@ -152,6 +163,14 @@ function StatusCard({
 
 export default function Home() {
   const { isAuthenticated, isRinkFunctionary } = useAuth();
+  const tabs = [
+    { id: "oversikt" as const, label: "Översikt", icon: Snowflake },
+    { id: "boka" as const, label: "Boka", icon: CalendarDays },
+    { id: "jour" as const, label: "Jour", icon: Users },
+    { id: "info" as const, label: "Info", icon: BookOpen },
+    ...(isRinkFunctionary ? [{ id: "kostnader" as const, label: "Kostnader", icon: Receipt }] : []),
+  ];
+  const [tab, setTab] = useHubTab(tabs, "oversikt");
   const utils = trpc.useUtils();
   const statusQuery = trpc.status.get.useQuery(undefined, {
     refetchInterval: 2 * 60 * 1000,
@@ -234,6 +253,31 @@ export default function Home() {
 
   return (
     <SiteLayout>
+      <HubTabs title="Rinken" tabs={tabs} value={tab} onChange={setTab} />
+
+      {tab === "boka" && <BookingSection />}
+
+      {tab === "jour" && (
+        <div className="container grid gap-10 py-6">
+          <section>
+            <h2 className="mb-3 text-xl font-extrabold tracking-tight">Rinkjour</h2>
+            <DutyWeeks area="hockeyrink" />
+          </section>
+          {isRinkFunctionary && <JobsBoard area="hockeyrink" />}
+        </div>
+      )}
+
+      {tab === "info" && <GuidesSection area="hockeyrink" />}
+
+      {tab === "kostnader" && isRinkFunctionary && (
+        <div className="pt-6">
+          <RefuelSection area="hockeyrink" />
+          <ExpenseSection area="hockeyrink" />
+        </div>
+      )}
+
+      {tab === "oversikt" && (
+      <>
       {/* Hero: the big answer */}
       <section className="relative overflow-hidden border-b border-border/60">
         <IsoDecor />
@@ -244,6 +288,9 @@ export default function Home() {
           <h1 className="mt-3 text-3xl sm:text-5xl font-extrabold leading-[1.05] tracking-tight">
             Är isen <span className="text-primary">åkbar</span> ikväll?
           </h1>
+          <div className="mt-4">
+            <RulesButton area="hockeyrink" />
+          </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
             <VerdictCard
               label="Hockeyrinken"
@@ -469,7 +516,7 @@ export default function Home() {
           </Link>
 
           <Link
-            href="/info"
+            href="/?flik=info"
             className="iso-card block p-5 text-sm hover:border-primary/40"
           >
             <div className="font-bold">Regler &amp; info</div>
@@ -479,7 +526,7 @@ export default function Home() {
           </Link>
 
           {/* This week's duty */}
-          <ThisWeekDuty area="hockeyrink" />
+          <ThisWeekDuty area="hockeyrink" href="/?flik=jour" />
 
           <Leaderboard
             title="Insatser i säsong"
@@ -489,6 +536,8 @@ export default function Home() {
           />
         </div>
       </div>
+      </>
+      )}
     </SiteLayout>
   );
 }

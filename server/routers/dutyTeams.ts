@@ -9,8 +9,8 @@ import { notifyTopicLater } from "../push";
 
 const area = z.enum(["hockeyrink", "skidspar"]);
 const AREA_TEXT = {
-  hockeyrink: { jour: "rinkjouren", url: "/schema" },
-  skidspar: { jour: "spårjouren", url: "/skidspar" },
+  hockeyrink: { jour: "rinkjouren", url: "/?flik=jour" },
+  skidspar: { jour: "spårjouren", url: "/skidspar?flik=jour" },
 } as const;
 
 export const dutyTeamsRouter = router({

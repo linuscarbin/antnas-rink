@@ -1,5 +1,4 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import SiteLayout from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -110,7 +109,8 @@ function WeekGrid({ bookings }: { bookings: BookingRow[] }) {
   );
 }
 
-export default function Boka() {
+/** Booking UI (form + list). Lives in the Rinken hub under "Boka". */
+export function BookingSection() {
   const { user, isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
   const [fromTime] = useState(() => {
@@ -191,7 +191,7 @@ export default function Boka() {
   }
 
   return (
-    <SiteLayout>
+    <>
       <div className="container py-8 grid gap-6 lg:grid-cols-3">
         {/* Booking form */}
         <div className="lg:col-span-1">
@@ -420,6 +420,6 @@ export default function Boka() {
           )}
         </div>
       </div>
-    </SiteLayout>
+    </>
   );
 }
