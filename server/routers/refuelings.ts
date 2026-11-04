@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { displayName } from "@shared/user";
 import { z } from "zod";
 import * as db from "../db";
 import {
@@ -77,7 +78,7 @@ export const refuelingsRouter = router({
       return db.createRefueling({
         area: input.area,
         userId: ctx.user.id,
-        responsibleName: ctx.user.name || ctx.user.email || "Okänd",
+        responsibleName: displayName(ctx.user),
         amountOre: Math.round(input.amountSek * 100),
         litresCenti:
           input.litres != null ? Math.round(input.litres * 100) : null,
@@ -111,7 +112,58 @@ export const refuelingsRouter = router({
           message: "Endast den som registrerat eller admin kan ta bort.",
         });
       }
+      if (row.reimbursed && ctx.user.role !== "admin") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Redan återbetald – be en admin om du behöver ändra.",
+        });
+      }
       await db.deleteRefueling(input.id);
       return { success: true } as const;
+    }),
+
+  // Owner (or admin): fix a mistake. Locked for non-admins once reimbursed.
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.number().int(),
+        amountSek: z.number().min(0).max(1000000),
+        litres: z.number().min(0).max(10000).optional().nullable(),
+        paymentMethod: z.enum(["tankkort_abk", "egen"]),
+        note: z.string().max(500).optional().nullable(),
+        receiptUrl: z.string().max(512).optional().nullable(),
+        purchasedAt: z.number().int().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const row = await db.getRefueling(input.id);
+      if (!row) throw new TRPCError({ code: "NOT_FOUND" });
+      const isAdmin = ctx.user.role === "admin";
+      if (row.userId !== ctx.user.id && !isAdmin) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Du kan bara ändra tankningen du själv har registrerat.",
+        });
+      }
+      if (row.reimbursed && !isAdmin) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Redan återbetald – be en admin om du behöver ändra.",
+        });
+      }
+      const receiptUrl =
+        input.receiptUrl && /^https?:\/\/|^\/uploads\//.test(input.receiptUrl)
+          ? input.receiptUrl
+          : null;
+      return db.updateRefueling(row.id, {
+        amountOre: Math.round(input.amountSek * 100),
+        litresCenti: input.litres != null ? Math.round(input.litres * 100) : null,
+        paymentMethod: input.paymentMethod,
+        // Switching to the club card means nothing to reimburse.
+        ...(input.paymentMethod === "tankkort_abk" ? { reimbursed: false } : {}),
+        note: input.note?.trim() || null,
+        receiptUrl,
+        ...(input.purchasedAt ? { purchasedAt: new Date(input.purchasedAt) } : {}),
+      });
     }),
 });

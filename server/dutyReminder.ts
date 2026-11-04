@@ -14,7 +14,7 @@ export async function sendWeeklyDutyReminders(now = new Date()) {
 
   const recipients: {
     userId: number;
-    email: string;
+    email: string | null;
     role: string;
     name: string;
     area: "rink" | "skidspår";
@@ -30,7 +30,8 @@ export async function sendWeeklyDutyReminders(now = new Date()) {
   ) => {
     if (!userId) return;
     const u = await db.getUserById(userId);
-    if (u?.email) {
+    // Everyone gets the push; e-mail only if the account has one.
+    if (u && !recipients.some((r) => r.userId === u.id && r.area === area)) {
       recipients.push({
         userId: u.id,
         email: u.email,
@@ -88,7 +89,7 @@ export async function sendWeeklyDutyReminders(now = new Date()) {
       ${r.note ? `<p>Notering: ${esc(r.note)}</p>` : ""}
     `;
     const result = await sendEmail({
-      to: r.email,
+      to: r.email ?? [],
       subject: `Påminnelse: din ${r.role.toLowerCase()} vecka ${week}`,
       html: emailLayout(`Din ${r.role.toLowerCase()} denna vecka`, body),
     });

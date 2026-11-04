@@ -1,0 +1,1 @@
+ALTER TABLE `chatMessages` ADD `editedAt` timestamp;

@@ -1,10 +1,14 @@
 import { z } from "zod";
 import * as db from "../db";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
+import { canSeeContactDetails } from "../_core/functionary";
 
 export const contactsRouter = router({
-  list: publicProcedure.query(async () => {
-    return db.listContacts();
+  // Public list of names/roles; phone and e-mail only for functionaries/admins.
+  list: publicProcedure.query(async ({ ctx }) => {
+    const rows = await db.listContacts();
+    if (await canSeeContactDetails(ctx.user)) return rows;
+    return rows.map((c) => ({ ...c, phone: null, email: null }));
   }),
 
   create: adminProcedure

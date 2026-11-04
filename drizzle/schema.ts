@@ -14,10 +14,15 @@ import {
  */
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
-  /** Email is the login identifier (unique). */
-  email: varchar("email", { length: 320 }).notNull().unique(),
+  /** Optional e-mail (unique). Login works with e-mail or phone number. */
+  email: varchar("email", { length: 320 }).unique(),
   /** bcrypt password hash for self-hosted email+password auth. */
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  /** False for invited accounts until they pick their own password. */
+  passwordSet: boolean("passwordSet").default(true).notNull(),
+  /** sha256 of a one-time link token (invite or password reset). */
+  accountTokenHash: varchar("accountTokenHash", { length: 64 }),
+  accountTokenExpiresAt: timestamp("accountTokenExpiresAt"),
   name: varchar("name", { length: 160 }),
   /** Optional phone number, used for contact/duty display. */
   phone: varchar("phone", { length: 40 }),
@@ -196,8 +201,10 @@ export const chatMessages = mysqlTable("chatMessages", {
   content: text("content").notNull(),
   /** Optional uploaded image URL (served from the uploads folder). */
   imageUrl: varchar("imageUrl", { length: 512 }),
-  /** Soft-delete flag for admin moderation. */
+  /** Soft-delete flag (author or admin). */
   deleted: boolean("deleted").default(false).notNull(),
+  /** Set when the author edits the message ("ändrad"). */
+  editedAt: timestamp("editedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

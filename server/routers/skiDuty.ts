@@ -1,7 +1,9 @@
 import { TRPCError } from "@trpc/server";
+import { displayName } from "@shared/user";
 import { z } from "zod";
 import * as db from "../db";
 import { rotateTeams } from "@shared/rink";
+import { canSeeContactDetails } from "../_core/functionary";
 import { emailLayout, esc, sendEmail } from "../email";
 import { notifyConflict } from "../push";
 import {
@@ -25,8 +27,10 @@ export const skiDutyRouter = router({
   // Public: view the ski-track duty schedule.
   list: publicProcedure
     .input(z.object({ year: z.number().int().optional() }).optional())
-    .query(async ({ input }) => {
-      return db.listSkiDuties(input?.year);
+    .query(async ({ ctx, input }) => {
+      const rows = await db.listSkiDuties(input?.year);
+      if (await canSeeContactDetails(ctx.user)) return rows;
+      return rows.map((d) => ({ ...d, sparjourPhone: null }));
     }),
 
   // Admin: create or update a week's ski duty.
@@ -90,7 +94,7 @@ export const skiDutyRouter = router({
       const updated = await db.setSkiDutyConflict(input.id, input.conflict);
 
       if (input.conflict && updated) {
-        const reporter = ctx.user.name || ctx.user.email || "En användare";
+        const reporter = displayName(ctx.user);
         const admins = await db.listAdmins();
         const adminEmails = admins
           .map((a) => a.email)

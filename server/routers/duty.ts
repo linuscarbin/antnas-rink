@@ -1,7 +1,9 @@
 import { TRPCError } from "@trpc/server";
+import { displayName } from "@shared/user";
 import { z } from "zod";
 import * as db from "../db";
 import { rotateTeams } from "@shared/rink";
+import { canSeeContactDetails } from "../_core/functionary";
 import { emailLayout, esc, sendEmail } from "../email";
 import { notifyConflict } from "../push";
 import {
@@ -28,8 +30,10 @@ export const dutyRouter = router({
   // Public: anyone can view the duty schedule.
   list: publicProcedure
     .input(z.object({ year: z.number().int().optional() }).optional())
-    .query(async ({ input }) => {
-      return db.listDuties(input?.year);
+    .query(async ({ ctx, input }) => {
+      const rows = await db.listDuties(input?.year);
+      if (await canSeeContactDetails(ctx.user)) return rows;
+      return rows.map((d) => ({ ...d, plogjourPhone: null, spoljourPhone: null }));
     }),
 
   // Admin: create or update a week's duty assignment.
@@ -110,7 +114,7 @@ export const dutyRouter = router({
       );
 
       if (input.conflict && updated) {
-        const reporter = ctx.user.name || ctx.user.email || "En användare";
+        const reporter = displayName(ctx.user);
         const kindLabel = input.kind === "plogjour" ? "Plogjour" : "Spoljour";
         const admins = await db.listAdmins();
         const adminEmails = admins

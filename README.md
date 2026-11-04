@@ -141,6 +141,19 @@ Sajten är en installerbar webbapp med push-notiser – ingen App Store behövs.
 - Skickas direkt från servern via Web Push (VAPID) – ingen Firebase eller
   extern tjänst behövs. HTTPS krävs (Coolify ordnar det).
 
+## Konton och inloggning
+
+- Man loggar in med **telefonnummer eller e-post** (070-123 45 67, 0701234567
+  och +46701234567 räknas som samma nummer). E-post är frivilligt.
+- **Vem som helst kan skapa konto** – det ger bokning och anslagstavla.
+  Jourhavarrättigheter kommer bara via ett jourlag som admin lägger in.
+- **Admin → Användare → Lägg till flera:** klistra in namn + telefon (t.ex.
+  från WhatsApp-gruppen), välj lag. Varje person får en personlig länk
+  (knappen *WhatsApp* öppnar ett färdigt meddelande) där de väljer eget
+  lösenord. Inbjudan gäller 14 dagar och fungerar en gång.
+- **Glömt lösenord:** har kontot e-post skickas en länk via Resend (gäller 2 h).
+  Annars skickar admin en ny länk via WhatsApp (gäller 3 dagar).
+
 ## Behörigheter
 
 - **Besökare:** ser om rinken/spåret är åkbart, foton, schema, kontakter,

@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { displayName } from "@shared/user";
 import { z } from "zod";
 import * as db from "../db";
 import { functionaryAreas } from "../_core/functionary";
@@ -74,7 +75,7 @@ export const guidesRouter = router({
     const id = await db.createGuide({
       ...input,
       createdByUserId: ctx.user.id,
-      updatedByName: ctx.user.name || ctx.user.email,
+      updatedByName: displayName(ctx.user),
     });
     return { id };
   }),
@@ -87,7 +88,7 @@ export const guidesRouter = router({
       const { id, ...data } = input;
       await db.updateGuide(id, {
         ...data,
-        updatedByName: ctx.user.name || ctx.user.email,
+        updatedByName: displayName(ctx.user),
       });
       return { success: true } as const;
     }),

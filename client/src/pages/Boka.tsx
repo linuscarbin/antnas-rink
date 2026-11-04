@@ -16,7 +16,7 @@ import { getLoginUrl } from "@/const";
 import { formatTime } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
 import { ZONE_LABELS, ZONES, type Zone } from "@shared/rink";
-import { CalendarDays, Clock, MapPin, Trash2 } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -143,6 +143,17 @@ export default function Boka() {
     },
     onError: (e) => toast.error(e.message),
   });
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const update = trpc.bookings.update.useMutation({
+    onSuccess: () => {
+      utils.bookings.list.invalidate();
+      setEditingId(null);
+      setTitle("");
+      setNote("");
+      toast.success("Bokningen är ändrad.");
+    },
+    onError: (e) => toast.error(e.message),
+  });
   const cancel = trpc.bookings.cancel.useMutation({
     onSuccess: () => {
       utils.bookings.list.invalidate();
@@ -172,6 +183,10 @@ export default function Boka() {
     const e = new Date(end).getTime();
     if (!title.trim()) return toast.error("Ange vad bokningen gäller.");
     if (e <= s) return toast.error("Sluttiden måste vara efter starttiden.");
+    if (editingId) {
+      update.mutate({ id: editingId, title: title.trim(), zone, startTime: s, endTime: e, note });
+      return;
+    }
     create.mutate({ title: title.trim(), zone, startTime: s, endTime: e, note });
   }
 
@@ -180,8 +195,10 @@ export default function Boka() {
       <div className="container py-8 grid gap-6 lg:grid-cols-3">
         {/* Booking form */}
         <div className="lg:col-span-1">
-          <div className="iso-card p-6 lg:sticky lg:top-24">
-            <h2 className="text-xl font-extrabold tracking-tight">Boka rinken</h2>
+          <div id="booking-form" className="iso-card p-6 lg:sticky lg:top-24 scroll-mt-24">
+            <h2 className="text-xl font-extrabold tracking-tight">
+              {editingId ? "Ändra bokning" : "Boka rinken"}
+            </h2>
             <p className="text-sm text-muted-foreground mt-1">
               Boka hela rinken eller en zon.
             </p>
@@ -249,10 +266,23 @@ export default function Boka() {
                 <Button
                   className="w-full font-semibold"
                   onClick={submit}
-                  disabled={create.isPending}
+                  disabled={create.isPending || update.isPending}
                 >
-                  Boka
+                  {editingId ? "Spara ändring" : "Boka"}
                 </Button>
+                {editingId && (
+                  <Button
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setEditingId(null);
+                      setTitle("");
+                      setNote("");
+                    }}
+                  >
+                    Avbryt ändring
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="mt-4 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4 text-sm text-muted-foreground">
@@ -347,7 +377,29 @@ export default function Boka() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => cancel.mutate({ id: b.id })}
+                              aria-label="Ändra"
+                              title="Ändra"
+                              onClick={() => {
+                                setEditingId(b.id);
+                                setTitle(b.title);
+                                setZone(b.zone as Zone);
+                                setStart(toLocalInputValue(new Date(b.startTime)));
+                                setEnd(toLocalInputValue(new Date(b.endTime)));
+                                setNote(b.note ?? "");
+                                document.getElementById("booking-form")?.scrollIntoView({ behavior: "smooth" });
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canCancel && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Avboka"
+                              onClick={() => {
+                                if (confirm("Avboka?")) cancel.mutate({ id: b.id });
+                              }}
                               disabled={cancel.isPending}
                               aria-label="Avboka"
                             >

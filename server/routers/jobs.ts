@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { displayName } from "@shared/user";
 import { z } from "zod";
 import { getIsoWeek } from "@shared/rink";
 import { formatJobWindow, JOB_KIND_LABEL, JOB_KINDS } from "@shared/jobs";
@@ -23,6 +24,19 @@ async function jobTeamMembers(job: { teamId: number | null; area: "hockeyrink" |
 
 const jobText = (j: { kind: (typeof JOB_KINDS)[number]; startsAt: Date; endsAt: Date }) =>
   `${JOB_KIND_LABEL[j.kind].toLowerCase()} ${formatJobWindow(new Date(j.startsAt), new Date(j.endsAt))}`;
+
+function validateWindow(startsAt: number, endsAt: number) {
+  const now = Date.now();
+  if (endsAt <= startsAt) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Sluttiden måste vara efter starttiden." });
+  }
+  if (endsAt - startsAt > 12 * HOUR) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Ett jobb kan vara max 12 timmar." });
+  }
+  if (endsAt < now || startsAt > now + 14 * 24 * HOUR) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Välj en tid inom de närmaste två veckorna." });
+  }
+}
 
 export const jobsRouter = router({
   // Functionaries: upcoming jobs in their areas with who said yes/no and who
@@ -72,17 +86,8 @@ export const jobsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       await assertFunctionary(ctx.user, input.area);
-      const now = Date.now();
-      if (input.endsAt <= input.startsAt) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Sluttiden måste vara efter starttiden." });
-      }
-      if (input.endsAt - input.startsAt > 12 * HOUR) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Ett jobb kan vara max 12 timmar." });
-      }
-      if (input.endsAt < now || input.startsAt > now + 14 * 24 * HOUR) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Välj en tid inom de närmaste två veckorna." });
-      }
-      const name = ctx.user.name || ctx.user.email;
+      validateWindow(input.startsAt, input.endsAt);
+      const name = displayName(ctx.user);
       const teamId = (await db.teamIdsForUser(ctx.user.id, input.area))[0] ?? null;
       const job = {
         area: input.area,
@@ -123,7 +128,7 @@ export const jobsRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Jobbet finns inte längre." });
       }
       await assertFunctionary(ctx.user, job.area);
-      const name = ctx.user.name || ctx.user.email;
+      const name = displayName(ctx.user);
       await db.setDutyJobResponse(job.id, ctx.user.id, name, input.answer);
       if (input.answer === "yes" && job.createdByUserId !== ctx.user.id) {
         notifyTopicLater(
@@ -167,6 +172,52 @@ export const jobsRouter = router({
           notifyTopicLater(
             "duty_jobs",
             { title: "Jobb inställt", body: `${job.createdByName} har ställt in: ${jobText(job)}.`, url: "/funktionar", tag: `job-${job.id}` },
+            { userIds: yesIds }
+          );
+        }
+      }
+      return { success: true } as const;
+    }),
+
+  // Proposer (or admin): change time, kind or note. Those who said yes are told.
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.number().int(),
+        kind: z.enum(JOB_KINDS),
+        startsAt: z.number().int(),
+        endsAt: z.number().int(),
+        note: z.string().trim().max(300).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const job = await db.getDutyJob(input.id);
+      if (!job || job.status !== "open") {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Jobbet går inte att ändra längre." });
+      }
+      if (ctx.user.role !== "admin" && job.createdByUserId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Bara den som föreslog jobbet kan ändra det." });
+      }
+      validateWindow(input.startsAt, input.endsAt);
+      const updated = {
+        kind: input.kind,
+        startsAt: new Date(input.startsAt),
+        endsAt: new Date(input.endsAt),
+        note: input.note || null,
+      };
+      await db.updateDutyJob(job.id, updated);
+      const timeChanged =
+        updated.startsAt.getTime() !== new Date(job.startsAt).getTime() ||
+        updated.endsAt.getTime() !== new Date(job.endsAt).getTime() ||
+        updated.kind !== job.kind;
+      if (timeChanged) {
+        const yesIds = (await db.listDutyJobResponses(job.id))
+          .filter((r) => r.answer === "yes" && r.userId !== ctx.user.id)
+          .map((r) => r.userId);
+        if (yesIds.length) {
+          notifyTopicLater(
+            "duty_jobs",
+            { title: "Ändrat jobb", body: `${job.createdByName} har ändrat till: ${jobText(updated)}.`, url: "/funktionar", tag: `job-${job.id}` },
             { userIds: yesIds }
           );
         }

@@ -1,6 +1,7 @@
-import { and, desc, eq, gt, gte, inArray, like, lt, lte, ne, or } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, isNotNull, like, lt, lte, ne, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { findBookingConflicts, type Zone } from "@shared/rink";
+import { normalizePhone } from "@shared/user";
 import {
   bilbingoOccasions,
   bingoAssignments,
@@ -73,7 +74,7 @@ export async function getUserByEmail(email: string) {
   const result = await db
     .select()
     .from(users)
-    .where(eq(users.email, email.toLowerCase()))
+    .where(eq(users.email, email.trim().toLowerCase()))
     .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
@@ -88,9 +89,36 @@ export async function createUser(data: InsertUser) {
   const db = await requireDb();
   const result = await db
     .insert(users)
-    .values({ ...data, email: data.email.toLowerCase() })
+    .values({
+      ...data,
+      email: data.email ? data.email.trim().toLowerCase() : null,
+      phone: data.phone ? normalizePhone(data.phone) ?? data.phone : null,
+    })
     .$returningId();
   return getUserById(result[0].id);
+}
+
+/** Users whose phone number matches (any format: 070-…, +4670…). */
+export async function getUsersByPhone(phone: string) {
+  const wanted = normalizePhone(phone);
+  if (!wanted) return [];
+  const db = await requireDb();
+  const rows = await db.select().from(users).where(isNotNull(users.phone));
+  return rows.filter((u) => normalizePhone(u.phone) === wanted);
+}
+
+export async function setAccountToken(id: number, tokenHash: string | null, expiresAt: Date | null) {
+  const db = await requireDb();
+  await db
+    .update(users)
+    .set({ accountTokenHash: tokenHash, accountTokenExpiresAt: expiresAt })
+    .where(eq(users.id, id));
+}
+
+export async function getUserByTokenHash(tokenHash: string) {
+  const db = await requireDb();
+  const rows = await db.select().from(users).where(eq(users.accountTokenHash, tokenHash)).limit(1);
+  return rows[0];
 }
 
 export async function touchUserSignIn(id: number) {
@@ -100,7 +128,11 @@ export async function touchUserSignIn(id: number) {
 
 export async function setUserPassword(id: number, passwordHash: string) {
   const db = await requireDb();
-  await db.update(users).set({ passwordHash }).where(eq(users.id, id));
+  // Setting a password also uses up any pending invite/reset link.
+  await db
+    .update(users)
+    .set({ passwordHash, passwordSet: true, accountTokenHash: null, accountTokenExpiresAt: null })
+    .where(eq(users.id, id));
 }
 
 export async function getUserById(id: number) {
@@ -121,10 +153,17 @@ export async function setUserRole(id: number, role: "user" | "admin") {
 
 export async function updateUserProfile(
   id: number,
-  data: { name?: string; phone?: string }
+  data: { name?: string; phone?: string | null; email?: string | null }
 ) {
   const db = await requireDb();
-  await db.update(users).set(data).where(eq(users.id, id));
+  await db
+    .update(users)
+    .set({
+      ...(data.name !== undefined ? { name: data.name } : {}),
+      ...(data.phone !== undefined ? { phone: data.phone ? normalizePhone(data.phone) ?? data.phone : null } : {}),
+      ...(data.email !== undefined ? { email: data.email ? data.email.trim().toLowerCase() : null } : {}),
+    })
+    .where(eq(users.id, id));
 }
 
 export async function listAdmins() {
@@ -1262,4 +1301,46 @@ export async function setDutyJobResponse(
 export async function listDutyJobResponses(jobId: number) {
   const db = await requireDb();
   return db.select().from(dutyJobResponses).where(eq(dutyJobResponses.jobId, jobId));
+}
+
+/* ------------------------ Editing your own posts ------------------------ */
+
+export async function getChatMessage(id: number) {
+  const db = await requireDb();
+  const rows = await db.select().from(chatMessages).where(eq(chatMessages.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function updateChatMessage(id: number, content: string, imageUrl: string | null) {
+  const db = await requireDb();
+  await db
+    .update(chatMessages)
+    .set({ content, imageUrl, editedAt: new Date() })
+    .where(eq(chatMessages.id, id));
+}
+
+export async function updateRefueling(id: number, data: Partial<InsertRefueling>) {
+  const db = await requireDb();
+  await db.update(refuelings).set(data).where(eq(refuelings.id, id));
+  return getRefueling(id);
+}
+
+export async function updateExpense(id: number, data: Partial<InsertExpense>) {
+  const db = await requireDb();
+  await db.update(expenses).set(data).where(eq(expenses.id, id));
+  return getExpense(id);
+}
+
+export async function updateBooking(id: number, data: Partial<InsertBooking>) {
+  const db = await requireDb();
+  await db.update(bookings).set(data).where(eq(bookings.id, id));
+  return getBooking(id);
+}
+
+export async function updateDutyJob(
+  id: number,
+  data: { startsAt?: Date; endsAt?: Date; note?: string | null; kind?: (typeof dutyJobs.$inferInsert)["kind"] }
+) {
+  const db = await requireDb();
+  await db.update(dutyJobs).set(data).where(eq(dutyJobs.id, id));
 }
