@@ -54,9 +54,9 @@ export function findBookingConflicts(
   return peak >= HALVES ? halves : [];
 }
 
-/** Antnäs (Luleå municipality) approximate coordinates for weather lookup. */
-export const ANTNAS_LAT = 65.5;
-export const ANTNAS_LON = 22.0;
+/** Antnäs (Luleå kommun) coordinates for weather lookup. */
+export const ANTNAS_LAT = 65.531;
+export const ANTNAS_LON = 21.886;
 
 /**
  * Returns ISO week-numbering year and week for a given date.
