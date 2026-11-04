@@ -19,6 +19,7 @@ import { scheduleRouter } from "./routers/schedule";
 import { settingsRouter } from "./routers/settings";
 import { skiDutyRouter } from "./routers/skiDuty";
 import { sponsorsRouter } from "./routers/sponsors";
+import { teamChatRouter } from "./routers/teamChat";
 import { statusRouter } from "./routers/status";
 import { trackRouter } from "./routers/track";
 import { usersRouter } from "./routers/users";
@@ -49,6 +50,7 @@ export const appRouter = router({
   settings: settingsRouter,
   documents: documentsRouter,
   sponsors: sponsorsRouter,
+  teamChat: teamChatRouter,
 });
 
 export type AppRouter = typeof appRouter;

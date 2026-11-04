@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   int,
   mysqlEnum,
   mysqlTable,
@@ -489,6 +490,9 @@ export const dutyAbsences = mysqlTable("dutyAbsences", {
   week: int("week").notNull(),
   memberId: int("memberId").notNull(),
   message: varchar("message", { length: 300 }),
+  /** Stand-in who said "Jag tar det" (förhinder löst). */
+  coveredByUserId: int("coveredByUserId"),
+  coveredByName: varchar("coveredByName", { length: 120 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -579,3 +583,48 @@ export const sponsors = mysqlTable("sponsors", {
 
 export type Sponsor = typeof sponsors.$inferSelect;
 export type InsertSponsor = typeof sponsors.$inferInsert;
+
+/**
+ * Per-person notification inbox: every notification meant for a logged-in
+ * user is stored here (even if the push itself was skipped at night or the
+ * app isn't installed), so it can be found again under Notiser.
+ */
+export const notifications = mysqlTable(
+  "notifications",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    topic: varchar("topic", { length: 40 }).notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    body: varchar("body", { length: 500 }).notNull(),
+    url: varchar("url", { length: 300 }),
+    readAt: timestamp("readAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("notifications_user_created").on(t.userId, t.createdAt)]
+);
+
+export type NotificationRow = typeof notifications.$inferSelect;
+
+/**
+ * Team chat ("lagchatt") for a duty team. Jobs from "Planera jobb" show up
+ * in the flow: kind "job" is the job card, "event" a small line such as
+ * "Lisa hänger med" or "Klart – plogad".
+ */
+export const teamMessages = mysqlTable(
+  "teamMessages",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    teamId: int("teamId").notNull(),
+    kind: mysqlEnum("kind", ["text", "job", "event"]).default("text").notNull(),
+    userId: int("userId"),
+    name: varchar("name", { length: 120 }).notNull(),
+    body: varchar("body", { length: 1000 }).notNull().default(""),
+    photoUrl: varchar("photoUrl", { length: 512 }),
+    jobId: int("jobId"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("teamMessages_team_id").on(t.teamId, t.id)]
+);
+
+export type TeamMessage = typeof teamMessages.$inferSelect;

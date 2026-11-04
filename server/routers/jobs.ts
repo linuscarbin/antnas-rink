@@ -8,10 +8,19 @@ import { assertFunctionary, functionaryAreas } from "../_core/functionary";
 import { protectedProcedure, router } from "../_core/trpc";
 import { jourUrl } from "@shared/push";
 import { notifyTopicLater } from "../push";
+import { jobLine, postJobCard, postJobEvent } from "../teamChat";
 import { recordRinkWork, recordTrackWork } from "../work";
 
 const area = z.enum(["hockeyrink", "skidspar"]);
 const HOUR = 3600 * 1000;
+
+const DONE_TEXT: Record<(typeof JOB_KINDS)[number], string> = {
+  plog: "Klart – plogat ✅",
+  spol: "Klart – spolat ✅",
+  plog_spol: "Klart – plogat och spolat ✅",
+  spar: "Klart – spåret draget ✅",
+  annat: "Klart ✅",
+};
 
 /** Team members a job concerns: the proposer's team, else the week's team. */
 async function jobTeamMembers(job: { teamId: number | null; area: "hockeyrink" | "skidspar"; startsAt: Date }) {
@@ -101,6 +110,7 @@ export const jobsRouter = router({
         createdByName: name,
       };
       const id = await db.createDutyJob(job);
+      await postJobCard(id, job, { userId: ctx.user.id, name });
 
       const userIds = (await jobTeamMembers(job))
         .map((m) => m.userId)
@@ -130,7 +140,11 @@ export const jobsRouter = router({
       }
       await assertFunctionary(ctx.user, job.area);
       const name = displayName(ctx.user);
+      const before = (await db.listDutyJobResponses(job.id)).find((r) => r.userId === ctx.user.id)?.answer ?? null;
       await db.setDutyJobResponse(job.id, ctx.user.id, name, input.answer);
+      if (input.answer !== before && input.answer && job.createdByUserId !== ctx.user.id) {
+        await postJobEvent(job, { userId: ctx.user.id, name }, input.answer === "yes" ? `${name} hänger med 👍` : `${name} kan inte`);
+      }
       if (input.answer === "yes" && job.createdByUserId !== ctx.user.id) {
         notifyTopicLater(
           "duty_jobs",
@@ -165,6 +179,12 @@ export const jobsRouter = router({
         if (job.kind === "spar") await recordTrackWork(who);
       }
       await db.setDutyJobStatus(job.id, input.status);
+      if (input.status !== job.status) {
+        const by = { userId: ctx.user.id, name: displayName(ctx.user) };
+        if (input.status === "done") await postJobEvent(job, by, DONE_TEXT[job.kind]);
+        if (input.status === "cancelled") await postJobEvent(job, by, `Inställt: ${jobLine(job)}`);
+        if (input.status === "open") await postJobEvent(job, by, `Öppnat igen: ${jobLine(job)}`);
+      }
       if (input.status === "cancelled") {
         const yesIds = responses
           .filter((r) => r.answer === "yes" && r.userId !== ctx.user.id)
@@ -212,6 +232,11 @@ export const jobsRouter = router({
         updated.endsAt.getTime() !== new Date(job.endsAt).getTime() ||
         updated.kind !== job.kind;
       if (timeChanged) {
+        await postJobEvent(
+          { ...job, ...updated },
+          { userId: ctx.user.id, name: displayName(ctx.user) },
+          `Ändrat till: ${jobLine(updated)}`
+        );
         const yesIds = (await db.listDutyJobResponses(job.id))
           .filter((r) => r.answer === "yes" && r.userId !== ctx.user.id)
           .map((r) => r.userId);

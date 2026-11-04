@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, gte, inArray, isNotNull, like, lt, lte, ne, or } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, isNotNull, isNull, like, lt, lte, ne, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { findBookingConflicts, type Zone } from "@shared/rink";
 import { normalizePhone } from "@shared/user";
@@ -13,6 +13,8 @@ import {
   guides,
   InsertGuide,
   pushSubscriptions,
+  notifications,
+  teamMessages,
   InsertPushSubscription,
   rinkTeams,
   rinkTeamMembers,
@@ -1099,6 +1101,131 @@ export async function deletePushSubscription(endpoint: string) {
   await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
 }
 
+/**
+ * Removes one topic from all of a user's devices, e.g. "group" when they
+ * become a functionary (they can turn it on again themselves).
+ */
+export async function removeTopicForUser(userId: number, topic: string) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(pushSubscriptions)
+    .where(and(eq(pushSubscriptions.userId, userId), like(pushSubscriptions.topics, `%,${topic},%`)));
+  for (const r of rows) {
+    const next = r.topics.replace(`,${topic},`, ",");
+    await db
+      .update(pushSubscriptions)
+      .set({ topics: next === "," ? "" : next })
+      .where(eq(pushSubscriptions.id, r.id));
+  }
+}
+
+/* ------------------------------ Team chat ------------------------------ */
+
+const CHAT_DAYS = 180;
+
+export async function addTeamMessage(data: {
+  teamId: number;
+  kind: "text" | "job" | "event";
+  userId: number | null;
+  name: string;
+  body: string;
+  photoUrl?: string | null;
+  jobId?: number | null;
+}) {
+  const db = await requireDb();
+  const [row] = await db
+    .insert(teamMessages)
+    .values({ ...data, body: data.body.slice(0, 1000), name: data.name.slice(0, 120) })
+    .$returningId();
+  await db.delete(teamMessages).where(lt(teamMessages.createdAt, new Date(Date.now() - CHAT_DAYS * 86400_000)));
+  return row.id;
+}
+
+/** Latest messages of a team, oldest first (optionally only newer than an id). */
+export async function listTeamMessages(teamId: number, opts: { afterId?: number; limit?: number } = {}) {
+  const db = await requireDb();
+  const where = opts.afterId
+    ? and(eq(teamMessages.teamId, teamId), gt(teamMessages.id, opts.afterId))
+    : eq(teamMessages.teamId, teamId);
+  const rows = await db
+    .select()
+    .from(teamMessages)
+    .where(where)
+    .orderBy(desc(teamMessages.id))
+    .limit(opts.limit ?? 100);
+  return rows.reverse();
+}
+
+export async function getTeamMessage(id: number) {
+  const db = await requireDb();
+  const rows = await db.select().from(teamMessages).where(eq(teamMessages.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function deleteTeamMessage(id: number) {
+  const db = await requireDb();
+  await db.delete(teamMessages).where(eq(teamMessages.id, id));
+}
+
+/** Absences in a set of members that a user stands in for (any week). */
+export async function coveredAbsencesForUser(userId: number) {
+  const db = await requireDb();
+  return db.select().from(dutyAbsences).where(eq(dutyAbsences.coveredByUserId, userId));
+}
+
+/* ------------------------------ Notification inbox ------------------------------ */
+
+const INBOX_DAYS = 60;
+
+export async function logNotifications(
+  userIds: number[],
+  msg: { topic: string; title: string; body: string; url?: string | null }
+) {
+  const ids = Array.from(new Set(userIds)).filter((id) => Number.isInteger(id));
+  if (!ids.length) return;
+  const db = await requireDb();
+  await db.insert(notifications).values(
+    ids.map((userId) => ({
+      userId,
+      topic: msg.topic.slice(0, 40),
+      title: msg.title.slice(0, 200),
+      body: msg.body.slice(0, 500),
+      url: msg.url ? msg.url.slice(0, 300) : null,
+    }))
+  );
+  // Keep the inbox small: drop old entries.
+  await db.delete(notifications).where(lt(notifications.createdAt, new Date(Date.now() - INBOX_DAYS * 86400_000)));
+}
+
+export async function listNotifications(userId: number, limit = 50) {
+  const db = await requireDb();
+  return db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt), desc(notifications.id))
+    .limit(limit);
+}
+
+export async function countUnreadNotifications(userId: number): Promise<number> {
+  const db = await requireDb();
+  const rows = await db
+    .select({ id: notifications.id })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)))
+    .limit(100);
+  return rows.length;
+}
+
+export async function markNotificationsRead(userId: number) {
+  const db = await requireDb();
+  await db
+    .update(notifications)
+    .set({ readAt: new Date() })
+    .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
+}
+
 /** Subscriptions for a topic, optionally limited to some users. */
 export async function listPushSubscriptions(topic: string, userIds?: number[]) {
   const db = await requireDb();
@@ -1251,6 +1378,25 @@ export async function setAbsence(
   if (absent) {
     await db.insert(dutyAbsences).values({ year, week, memberId, message });
   }
+}
+
+export async function getAbsence(year: number, week: number, memberId: number) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(dutyAbsences)
+    .where(and(eq(dutyAbsences.year, year), eq(dutyAbsences.week, week), eq(dutyAbsences.memberId, memberId)))
+    .limit(1);
+  return rows[0];
+}
+
+/** Sets (or clears, with null) who stands in for an absence. */
+export async function setAbsenceCover(id: number, cover: { userId: number; name: string } | null) {
+  const db = await requireDb();
+  await db
+    .update(dutyAbsences)
+    .set({ coveredByUserId: cover?.userId ?? null, coveredByName: cover?.name ?? null })
+    .where(eq(dutyAbsences.id, id));
 }
 
 /** The week's duty row for an area (rink or ski track). */

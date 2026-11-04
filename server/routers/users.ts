@@ -170,6 +170,8 @@ export const usersRouter = router({
         });
       }
       await db.setUserRole(input.id, input.role);
+      // New admins don't need "ett gäng är på väg" (they can turn it on again).
+      if (input.role === "admin" && target.role !== "admin") await db.removeTopicForUser(input.id, "group");
       return { success: true } as const;
     }),
 });

@@ -169,6 +169,41 @@
       "when": 1793820866869,
       "tag": "0023_slimy_warpath",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1793826303922,
+      "tag": "0024_goofy_moonstone",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1793826304913,
+      "tag": "0025_strip_group_for_functionaries",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1793826751398,
+      "tag": "0026_loud_riptide",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "5",
+      "when": 1793827155128,
+      "tag": "0027_overconfident_madelyne_pryor",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "5",
+      "when": 1793827156032,
+      "tag": "0028_chat_topic_for_functionaries",
+      "breakpoints": true
     }
   ]
 }

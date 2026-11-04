@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import NotificationInbox from "@/components/NotificationInbox";
 import SiteLayout from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,15 +17,21 @@ import {
   subscriptionPayload,
 } from "@/lib/push";
 import { trpc } from "@/lib/trpc";
-import { DUTY_TOPICS, PUBLIC_TOPICS, TOPIC_INFO, type PushTopic } from "@shared/push";
+import {
+  DEFAULT_FUNCTIONARY_TOPICS,
+  DEFAULT_PUBLIC_TOPICS,
+  DUTY_TOPICS,
+  PUBLIC_TOPICS,
+  TOPIC_INFO,
+  type PushTopic,
+} from "@shared/push";
 import { Bell, BellOff, Download, Share, SquarePlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-const DEFAULT_PUBLIC: PushTopic[] = ["rink_spolad", "group", "rink_closed"];
 
 export default function Notiser() {
-  const { isRinkFunctionary, isTrackFunctionary } = useAuth();
+  const { isRinkFunctionary, isTrackFunctionary, isAuthenticated } = useAuth();
   const isFunctionary = isRinkFunctionary || isTrackFunctionary;
   const keyQuery = trpc.push.publicKey.useQuery(undefined, { enabled: pushSupported() });
   const subscribe = trpc.push.subscribe.useMutation();
@@ -34,7 +41,7 @@ export default function Notiser() {
 
   const [endpoint, setEndpoint] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
-  const [topics, setTopics] = useState<PushTopic[]>(DEFAULT_PUBLIC);
+  const [topics, setTopics] = useState<PushTopic[]>(DEFAULT_PUBLIC_TOPICS);
   const [busy, setBusy] = useState(false);
   const [installable, setInstallable] = useState(canPromptInstall());
   useEffect(() => onInstallPromptChange(() => setInstallable(canPromptInstall())), []);
@@ -58,11 +65,10 @@ export default function Notiser() {
     })();
   }, [utils]);
 
-  // Functionaries get their duty topics pre-selected the first time.
+  // Functionaries get duty topics (and not "ett gäng är på väg")
+  // pre-selected the first time; they can change it.
   useEffect(() => {
-    if (isFunctionary && !endpoint) {
-      setTopics((t) => Array.from(new Set([...t, ...DUTY_TOPICS])));
-    }
+    if (isFunctionary && !endpoint) setTopics(DEFAULT_FUNCTIONARY_TOPICS);
   }, [isFunctionary, endpoint]);
 
   const supported = pushSupported();
@@ -118,13 +124,15 @@ export default function Notiser() {
           </span>
           <h1 className="mt-3 text-3xl sm:text-4xl font-extrabold tracking-tight">Notiser</h1>
           <p className="mt-2 text-muted-foreground max-w-2xl">
-            Få en notis i telefonen när rinken är nyspolad eller när ett gäng är
-            på väg. Inget konto behövs. Inga notiser mellan 22 och 07.
+            Få en notis i telefonen när rinken är plogad eller nyspolad, eller när
+            ett gäng är på väg. Inget konto behövs. Inga notiser mellan 22 och 07.
           </p>
         </div>
       </section>
 
       <div className="container py-6 grid gap-6 max-w-2xl">
+        {isAuthenticated && <NotificationInbox />}
+
         {/* Install */}
         {!standalone && (
           <div className="iso-card p-6">
