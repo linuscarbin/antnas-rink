@@ -153,6 +153,10 @@ Sajten är en installerbar webbapp med push-notiser – ingen App Store behövs.
   Markerar plogad/spolad/draget med foto, stänger rinken tillfälligt, ser
   *Funktionär*-sidan med guider (t.ex. förrådskod) samt tankning, kvitton och
   utlägg för sitt område. Behörigheten kontrolleras på servern.
+- **Planera jobb:** jourhavare föreslår "Jag kan ploga ikväll 18–20" under
+  *Funktionär*; laget får en notis och svarar *Jag kan* / *Kan inte*. När
+  jobbet markeras *Klart* uppdateras statusen (plogad/spolad/draget) med alla
+  som var med, och insatsen räknas i topplistan för var och en.
 - **Admin:** allt ovan för båda områdena + hanterar scheman, guider, kontakter,
   användare och bokningar via `/admin`. Gör en användare till admin under
   *Användare* i adminpanelen.

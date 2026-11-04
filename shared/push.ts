@@ -1,7 +1,7 @@
 // Push-notification topics and pure helpers shared by client and server.
 
 export const PUBLIC_TOPICS = ["rink_spolad", "track_draget", "group", "rink_closed"] as const;
-export const DUTY_TOPICS = ["duty_reminder", "snow_alert", "duty_conflict"] as const;
+export const DUTY_TOPICS = ["duty_jobs", "duty_reminder", "snow_alert", "duty_conflict"] as const;
 export const ALL_TOPICS = [...PUBLIC_TOPICS, ...DUTY_TOPICS] as const;
 export type PushTopic = (typeof ALL_TOPICS)[number];
 
@@ -10,6 +10,7 @@ export const TOPIC_INFO: Record<PushTopic, { label: string; hint: string }> = {
   track_draget: { label: "Spåret är nydraget", hint: "När skidspåret har dragits" },
   group: { label: "Ett gäng är på väg", hint: "När minst 3 checkat in samtidigt" },
   rink_closed: { label: "Rinken stängd", hint: "T.ex. vid töväder" },
+  duty_jobs: { label: "Jobb i laget", hint: "När någon föreslår ett jobb eller svarar på ditt" },
   duty_reminder: { label: "Din jourvecka", hint: "Påminnelse när din vecka börjar" },
   snow_alert: { label: "Snövarning", hint: "Mycket snö senaste dygnet – plogning behövs" },
   duty_conflict: { label: "Förhinder i jouren", hint: "När någon behöver ersättare" },

@@ -16,6 +16,8 @@ import {
   rinkTeams,
   rinkTeamMembers,
   dutyAbsences,
+  dutyJobs,
+  dutyJobResponses,
   contacts,
   dutySchedule,
   efforts,
@@ -1192,4 +1194,72 @@ export async function getGuide(id: number) {
   const db = await requireDb();
   const rows = await db.select().from(guides).where(eq(guides.id, id)).limit(1);
   return rows[0];
+}
+
+/* ------------------------------ Duty jobs ------------------------------ */
+
+export async function teamIdsForUser(userId: number, area: DutyArea): Promise<number[]> {
+  const db = await requireDb();
+  const rows = await db
+    .select({ id: rinkTeams.id })
+    .from(rinkTeamMembers)
+    .innerJoin(rinkTeams, eq(rinkTeams.id, rinkTeamMembers.teamId))
+    .where(and(eq(rinkTeamMembers.userId, userId), eq(rinkTeams.area, area)));
+  return rows.map((r) => r.id);
+}
+
+export async function createDutyJob(data: typeof dutyJobs.$inferInsert) {
+  const db = await requireDb();
+  const r = await db.insert(dutyJobs).values(data).$returningId();
+  return r[0].id;
+}
+
+export async function getDutyJob(id: number) {
+  const db = await requireDb();
+  const rows = await db.select().from(dutyJobs).where(eq(dutyJobs.id, id)).limit(1);
+  return rows[0];
+}
+
+/** Open/done jobs for some areas that haven't ended more than `graceMs` ago. */
+export async function listDutyJobs(areas: DutyArea[], graceMs = 12 * 3600 * 1000) {
+  const db = await requireDb();
+  if (!areas.length) return [];
+  const jobs = await db
+    .select()
+    .from(dutyJobs)
+    .where(
+      and(
+        inArray(dutyJobs.area, areas),
+        ne(dutyJobs.status, "cancelled"),
+        gt(dutyJobs.endsAt, new Date(Date.now() - graceMs))
+      )
+    )
+    .orderBy(dutyJobs.startsAt);
+  const responses = jobs.length
+    ? await db.select().from(dutyJobResponses).where(inArray(dutyJobResponses.jobId, jobs.map((j) => j.id)))
+    : [];
+  return jobs.map((j) => ({ ...j, responses: responses.filter((r) => r.jobId === j.id) }));
+}
+
+export async function setDutyJobStatus(id: number, status: "open" | "done" | "cancelled") {
+  const db = await requireDb();
+  await db.update(dutyJobs).set({ status }).where(eq(dutyJobs.id, id));
+}
+
+export async function setDutyJobResponse(
+  jobId: number,
+  userId: number,
+  name: string,
+  answer: "yes" | "no" | null
+) {
+  const db = await requireDb();
+  await db
+    .delete(dutyJobResponses)
+    .where(and(eq(dutyJobResponses.jobId, jobId), eq(dutyJobResponses.userId, userId)));
+  if (answer) await db.insert(dutyJobResponses).values({ jobId, userId, name, answer });
+}
+
+export async function listDutyJobResponses(jobId: number) {
+  const db = await requireDb();
+  return db.select().from(dutyJobResponses).where(eq(dutyJobResponses.jobId, jobId));
 }
