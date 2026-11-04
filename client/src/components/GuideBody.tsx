@@ -27,6 +27,15 @@ const TEL_PATH = "/__tel/";
 const encodeTel = (md: string) => md.replace(/\]\(tel:([+\d]+)\)/g, `](${TEL_PATH}$1)`);
 
 /**
+ * Door codes are often written like *181814* or *#1234 (that's how you key
+ * them in), but markdown would turn *181814* into italics and drop the stars.
+ * A single * touching a digit or # is therefore always shown as a character.
+ * **bold** still works.
+ */
+export const keepCodeStars = (md: string) =>
+  md.replace(/(?<![\\*])\*(?=[\d#])|(?<=[\d#])\*(?!\*)/g, "\\*");
+
+/**
  * Renders a guide's markdown. Images become full-width pictures with their
  * caption (the alt text) underneath; tapping one opens it large.
  */
@@ -79,7 +88,7 @@ export default function GuideBody({ body }: { body: string }) {
             },
           }}
         >
-          {encodeTel(body)}
+          {encodeTel(keepCodeStars(body))}
         </Streamdown>
       </div>
       <Dialog open={zoom !== null} onOpenChange={(o) => !o && setZoom(null)}>
