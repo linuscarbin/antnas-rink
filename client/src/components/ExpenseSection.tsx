@@ -386,7 +386,7 @@ export default function ExpenseSection({ area }: { area: Area }) {
                         <Receipt className="h-5 w-5" />
                       </span>
                     )}
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1 basis-48">
                       <div className="font-extrabold">
                         {(r.amountOre / 100).toLocaleString("sv-SE")} kr
                         {r.category && (

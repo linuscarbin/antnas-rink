@@ -94,7 +94,7 @@ export default function Admin() {
           Hantera jourscheman, kontakter, bokningar, användare och påminnelser.
         </p>
 
-        <div className="mt-5 flex flex-wrap gap-2 border-b border-border/60 pb-3">
+        <div className="-mx-4 mt-5 flex gap-2 overflow-x-auto border-b border-border/60 px-4 pb-3 sm:mx-0 sm:flex-wrap sm:px-0">
           {TABS.map((t) => {
             const Icon = t.icon;
             const active = tab === t.id;
@@ -102,7 +102,7 @@ export default function Admin() {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
                   active
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-accent"

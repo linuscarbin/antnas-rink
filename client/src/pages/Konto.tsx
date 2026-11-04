@@ -47,6 +47,7 @@ export default function Konto({ params }: { params: { token: string } }) {
   const isInvite = info.data?.valid && info.data.isInvite;
 
   function submit() {
+    if (isInvite && !name.trim()) return toast.error("Skriv ditt namn.");
     if (password.length < 8) return toast.error("Lösenordet måste vara minst 8 tecken.");
     if (password !== password2) return toast.error("Lösenorden är inte lika.");
     use.mutate({
@@ -109,8 +110,14 @@ export default function Konto({ params }: { params: { token: string } }) {
             {isInvite && (
               <>
                 <div className="space-y-1.5">
-                  <Label htmlFor="name">Namn</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+                  <Label htmlFor="name">Ditt namn</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    autoComplete="name"
+                    placeholder="Förnamn Efternamn"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="email">E-post (valfritt – behövs för ”glömt lösenord”)</Label>

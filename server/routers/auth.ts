@@ -212,11 +212,16 @@ export const authRouter = router({
           message: "Länken har gått ut eller redan använts. Be en admin om en ny.",
         });
       }
+      const name = input.name?.trim() || user.name?.trim();
+      if (!name) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Skriv ditt namn." });
+      }
       if (input.email !== undefined) await assertEmailFree(input.email || null, user.id);
       await db.updateUserProfile(user.id, {
         ...(input.name ? { name: input.name } : {}),
         ...(input.email !== undefined && input.email !== (user.email ?? "") ? { email: input.email || null } : {}),
       });
+      if (input.name) await db.syncTeamMemberName(user.id, name);
       await db.setUserPassword(user.id, await hashPassword(input.password));
       await db.touchUserSignIn(user.id);
       const fresh = await db.getUserById(user.id);

@@ -154,6 +154,15 @@ Sajten är en installerbar webbapp med push-notiser – ingen App Store behövs.
 - **Glömt lösenord:** har kontot e-post skickas en länk via Resend (gäller 2 h).
   Annars skickar admin en ny länk via WhatsApp (gäller 3 dagar).
 
+## Arbetsdagar (kallelser)
+
+Jourhavare och admin kan under *Arbetsdagar* kalla till t.ex. fix på rinken
+eller röjning längs spåret – till **alla med konto** eller **bara jourhavare**.
+Kallelsen går ut som notis (oavsett valda notistyper, men inte 22–07 – då
+skickas den kl 07) och som mejl till de som har e-post. Man svarar Kommer /
+Kanske / Kan inte med valfri kommentar. Påminnelse ~3 timmar innan till de
+som kommer; ändrad tid eller inställt meddelas automatiskt.
+
 ## Behörigheter
 
 - **Besökare:** ser om rinken/spåret är åkbart, foton, schema, kontakter,

@@ -19,6 +19,8 @@ import {
   dutyAbsences,
   dutyJobs,
   dutyJobResponses,
+  events,
+  eventResponses,
   contacts,
   dutySchedule,
   efforts,
@@ -156,6 +158,7 @@ export async function updateUserProfile(
   data: { name?: string; phone?: string | null; email?: string | null }
 ) {
   const db = await requireDb();
+  if (data.name === undefined && data.phone === undefined && data.email === undefined) return;
   await db
     .update(users)
     .set({
@@ -1343,4 +1346,95 @@ export async function updateDutyJob(
 ) {
   const db = await requireDb();
   await db.update(dutyJobs).set(data).where(eq(dutyJobs.id, id));
+}
+
+/** Keep the name copied into duty teams in sync with the user's profile. */
+export async function syncTeamMemberName(userId: number, name: string) {
+  const db = await requireDb();
+  await db.update(rinkTeamMembers).set({ name }).where(eq(rinkTeamMembers.userId, userId));
+}
+
+/* ------------------------------- Events -------------------------------- */
+
+export async function createEvent(data: typeof events.$inferInsert) {
+  const db = await requireDb();
+  const r = await db.insert(events).values(data).$returningId();
+  return r[0].id;
+}
+
+export async function getEvent(id: number) {
+  const db = await requireDb();
+  const rows = await db.select().from(events).where(eq(events.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function updateEvent(id: number, data: Partial<typeof events.$inferInsert>) {
+  const db = await requireDb();
+  await db.update(events).set(data).where(eq(events.id, id));
+}
+
+/** Active events that haven't ended more than `graceMs` ago, with answers. */
+export async function listUpcomingEvents(graceMs = 6 * 3600 * 1000) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.status, "active"), gt(events.endsAt, new Date(Date.now() - graceMs))))
+    .orderBy(events.startsAt);
+  const answers = rows.length
+    ? await db.select().from(eventResponses).where(inArray(eventResponses.eventId, rows.map((e) => e.id)))
+    : [];
+  return rows.map((e) => ({ ...e, responses: answers.filter((a) => a.eventId === e.id) }));
+}
+
+export async function listEventResponses(eventId: number) {
+  const db = await requireDb();
+  return db.select().from(eventResponses).where(eq(eventResponses.eventId, eventId));
+}
+
+export async function setEventResponse(
+  eventId: number,
+  userId: number,
+  name: string,
+  answer: "yes" | "maybe" | "no" | null,
+  comment: string | null
+) {
+  const db = await requireDb();
+  await db
+    .delete(eventResponses)
+    .where(and(eq(eventResponses.eventId, eventId), eq(eventResponses.userId, userId)));
+  if (answer) await db.insert(eventResponses).values({ eventId, userId, name, answer, comment });
+}
+
+/** Events starting within `withinMs` whose reminder hasn't gone out. */
+export async function eventsNeedingReminder(withinMs: number) {
+  const db = await requireDb();
+  const now = new Date();
+  return db
+    .select()
+    .from(events)
+    .where(
+      and(
+        eq(events.status, "active"),
+        eq(events.reminderSent, false),
+        gt(events.startsAt, now),
+        lte(events.startsAt, new Date(now.getTime() + withinMs))
+      )
+    );
+}
+
+/** Push subscriptions for some users, regardless of chosen topics. */
+export async function listPushSubscriptionsForUsers(userIds: number[]) {
+  if (!userIds.length) return [];
+  const db = await requireDb();
+  return db.select().from(pushSubscriptions).where(inArray(pushSubscriptions.userId, userIds));
+}
+
+/** Active, upcoming events whose push call-out hasn't gone out yet. */
+export async function eventsNeedingAnnouncement() {
+  const db = await requireDb();
+  return db
+    .select()
+    .from(events)
+    .where(and(eq(events.status, "active"), eq(events.announced, false), gt(events.endsAt, new Date())));
 }

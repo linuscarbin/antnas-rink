@@ -13,6 +13,7 @@ import {
   FolderOpen,
   Info,
   Bell,
+  Hammer,
   MessageSquare,
   Snowflake,
   Sun,
@@ -32,6 +33,7 @@ const WINTER_NAV: NavItem[] = [
   { href: "/schema", label: "Rinkjour", icon: CalendarDays },
   { href: "/boka", label: "Boka", icon: CalendarDays },
   { href: "/anslagstavla", label: "Anslagstavla", icon: MessageSquare },
+  { href: "/arbetsdagar", label: "Arbetsdagar", icon: Hammer },
   { href: "/info", label: "Regler & info", icon: Info },
   { href: "/dokument", label: "Dokument", icon: FolderOpen },
   { href: "/kontakt", label: "Kontakt", icon: Users },
@@ -89,7 +91,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
   const BrandIcon = isSummer ? Sun : Snowflake;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
         <div className="container flex h-16 items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
@@ -200,10 +202,10 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
         </nav>
       </header>
 
-      <main className="flex-1 pb-20 md:pb-0">{children}</main>
+      <main className="flex-1 pb-6 md:pb-0">{children}</main>
 
       <footer className="border-t border-border/70 bg-background/70">
-        <div className="container py-6 text-sm text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="container py-6 text-sm text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
           <span className="font-semibold text-foreground">Antnäs BK</span>
           <span>Hockeyrink och skidspår — skött av oss tillsammans.</span>
         </div>

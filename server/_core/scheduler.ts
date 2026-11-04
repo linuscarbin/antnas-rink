@@ -3,6 +3,7 @@ import cron from "node-cron";
 import { sendBilbingoReminders } from "../bingoReminder";
 import { sendWeeklyDutyReminders } from "../dutyReminder";
 import { runSnowAlert } from "../snowAlert";
+import { runEventJobs } from "../events";
 import { ENV } from "./env";
 
 let started = false;
@@ -18,6 +19,8 @@ export function startScheduler() {
 
   schedule("Duty reminder", ENV.dutyReminderCron, "DUTY_REMINDER_CRON", sendWeeklyDutyReminders);
   schedule("Snow alert", ENV.snowAlertCron, "SNOW_ALERT_CRON", runSnowAlert);
+  // Work days: deferred call-outs + reminders. Quiet unless something happens.
+  schedule("Event jobs", "*/10 * * * *", "-", runEventJobs, true);
   if (FEATURES.bilbingo) {
     schedule(
       "Bilbingo reminder",
@@ -33,7 +36,8 @@ function schedule(
   name: string,
   expression: string | undefined,
   envName: string,
-  job: () => Promise<unknown>
+  job: () => Promise<unknown>,
+  quiet = false
 ) {
   const expr = expression?.trim();
   if (!expr) {
@@ -49,7 +53,7 @@ function schedule(
     async () => {
       try {
         const result = await job();
-        console.log(`[Scheduler] ${name} run:`, JSON.stringify(result));
+        if (!quiet) console.log(`[Scheduler] ${name} run:`, JSON.stringify(result));
       } catch (error) {
         console.error(`[Scheduler] ${name} failed:`, error);
       }
