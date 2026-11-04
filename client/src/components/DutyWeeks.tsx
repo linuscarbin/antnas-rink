@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDutyWeeks, type DutyArea, type DutyWeek } from "@/hooks/useDutyWeeks";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { useDutyWeeks, type AbsenceInfo, type DutyArea, type DutyWeek } from "@/hooks/useDutyWeeks";
 import { trpc } from "@/lib/trpc";
 import { getIsoWeek } from "@shared/rink";
 import { formatPhone } from "@shared/user";
-import { AlertTriangle, Phone } from "lucide-react";
+import { AlertTriangle, Check, HandHelping, Phone } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -14,8 +15,20 @@ export default function DutyWeeks({ area }: { area: DutyArea }) {
   const [now] = useState(() => new Date());
   const current = getIsoWeek(now);
   const [year, setYear] = useState(current.year);
-  const { weeks, isAbsent, loading } = useDutyWeeks(area, year);
+  const { weeks, isAbsent, absence, loading } = useDutyWeeks(area, year);
+  const { isRinkFunctionary, isTrackFunctionary } = useAuth();
+  const canCover = area === "hockeyrink" ? isRinkFunctionary : isTrackFunctionary;
   const utils = trpc.useUtils();
+  const cover = trpc.dutyTeams.coverAbsence.useMutation({
+    onSuccess: (_r, vars) => {
+      utils.dutyTeams.absences.invalidate();
+      toast.success(vars.cover ? "Tack! Laget och admin har fått veta att du tar det." : "Ångrat – laget har meddelats.");
+    },
+    onError: (e) => {
+      utils.dutyTeams.absences.invalidate();
+      toast.error(e.message);
+    },
+  });
   const setAbsence = trpc.dutyTeams.setAbsence.useMutation({
     onSuccess: (_r, vars) => {
       utils.dutyTeams.absences.invalidate();
@@ -49,7 +62,13 @@ export default function DutyWeeks({ area }: { area: DutyArea }) {
               d={d}
               isCurrent={year === current.year && d.week === current.week}
               isAbsent={isAbsent}
-              pending={setAbsence.isPending}
+              absence={absence}
+              canCover={canCover}
+              pending={setAbsence.isPending || cover.isPending}
+              onCover={(memberId, on) => {
+                if (on && !confirm("Vill du hoppa in och ta passet?")) return;
+                cover.mutate({ year: d.year, week: d.week, memberId, cover: on });
+              }}
               onToggle={(memberId, absent) => {
                 const message = absent
                   ? prompt("Vill du skriva något till laget/admin? (valfritt)") ?? undefined
@@ -72,14 +91,20 @@ function WeekCard({
   d,
   isCurrent,
   isAbsent,
+  absence,
+  canCover,
   pending,
   onToggle,
+  onCover,
 }: {
   d: DutyWeek;
   isCurrent: boolean;
   isAbsent: (week: number, memberId: number) => boolean;
+  absence: (week: number, memberId: number) => AbsenceInfo | undefined;
+  canCover: boolean;
   pending: boolean;
   onToggle: (memberId: number, absent: boolean) => void;
+  onCover: (memberId: number, cover: boolean) => void;
 }) {
   return (
     <div className={`iso-card p-5 ${isCurrent ? "ring-2 ring-primary" : ""}`}>
@@ -96,8 +121,30 @@ function WeekCard({
         {d.team
           ? d.team.members.map((m) => {
               const absent = isAbsent(d.week, m.id);
+              const info = absence(d.week, m.id);
               return (
-                <MemberLine key={m.id} name={m.name} phone={m.phone} absent={absent}>
+                <MemberLine key={m.id} name={m.name} phone={m.phone} absent={absent} coveredBy={info?.coveredByName}>
+                  {absent && !m.isMe && canCover && !info?.coveredByName && (
+                    <Button
+                      size="sm"
+                      className="ml-auto h-7 gap-1 text-xs"
+                      disabled={pending}
+                      onClick={() => onCover(m.id, true)}
+                    >
+                      <HandHelping className="h-3.5 w-3.5" /> Jag tar det
+                    </Button>
+                  )}
+                  {info?.coveredByMe && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="ml-auto h-7 text-xs"
+                      disabled={pending}
+                      onClick={() => onCover(m.id, false)}
+                    >
+                      Ångra
+                    </Button>
+                  )}
                   {m.isMe && (
                     <Button
                       size="sm"
@@ -124,19 +171,27 @@ export function MemberLine({
   name,
   phone,
   absent,
+  coveredBy,
   children,
 }: {
   name: string;
   phone: string | null;
   absent: boolean;
+  /** Stand-in's name when the förhinder is solved. */
+  coveredBy?: string | null;
   children?: React.ReactNode;
 }) {
   return (
     <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
       <span className={`font-semibold ${absent ? "line-through text-muted-foreground" : ""}`}>{name}</span>
-      {absent && (
-        <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-bold text-destructive">Förhinder</span>
-      )}
+      {absent &&
+        (coveredBy ? (
+          <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+            <Check className="h-3 w-3" /> {coveredBy} tar det
+          </span>
+        ) : (
+          <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-bold text-destructive">Förhinder</span>
+        ))}
       {phone && (
         <a href={`tel:${phone}`} className="inline-flex items-center gap-1 text-primary">
           <Phone className="h-3 w-3" /> {formatPhone(phone)}
@@ -151,7 +206,7 @@ export function MemberLine({
 export function ThisWeekDuty({ area, href }: { area: DutyArea; href?: string }) {
   const [now] = useState(() => new Date());
   const { year, week } = getIsoWeek(now);
-  const { weeks, isAbsent, loading } = useDutyWeeks(area, year);
+  const { weeks, isAbsent, absence, loading } = useDutyWeeks(area, year);
   const d = weeks.find((w) => w.week === week);
   const label = area === "hockeyrink" ? "Rinkjour" : "Spårjour";
   return (
@@ -174,7 +229,13 @@ export function ThisWeekDuty({ area, href }: { area: DutyArea; href?: string }) 
           <ul className="mt-2 space-y-1.5">
             {d.team
               ? d.team.members.map((m) => (
-                  <MemberLine key={m.id} name={m.name} phone={m.phone} absent={isAbsent(week, m.id)} />
+                  <MemberLine
+                    key={m.id}
+                    name={m.name}
+                    phone={m.phone}
+                    absent={isAbsent(week, m.id)}
+                    coveredBy={absence(week, m.id)?.coveredByName}
+                  />
                 ))
               : d.legacy.map((l) => <MemberLine key={l.name} name={l.name} phone={l.phone} absent={l.conflict} />)}
           </ul>

@@ -183,6 +183,13 @@
       "when": 1793826304913,
       "tag": "0025_strip_group_for_functionaries",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1793826751398,
+      "tag": "0026_loud_riptide",
+      "breakpoints": true
     }
   ]
 }

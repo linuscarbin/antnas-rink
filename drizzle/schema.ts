@@ -490,6 +490,9 @@ export const dutyAbsences = mysqlTable("dutyAbsences", {
   week: int("week").notNull(),
   memberId: int("memberId").notNull(),
   message: varchar("message", { length: 300 }),
+  /** Stand-in who said "Jag tar det" (förhinder löst). */
+  coveredByUserId: int("coveredByUserId"),
+  coveredByName: varchar("coveredByName", { length: 120 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

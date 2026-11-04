@@ -13,6 +13,24 @@ const AREA_TEXT = {
   skidspar: { jour: "spårjouren", url: "/skidspar?flik=jour" },
 } as const;
 
+/** "Kalles", but "Lars" (names ending in s/x/z get no extra s). */
+const genitive = (name: string) => (/[sxz]$/i.test(name.trim()) ? name.trim() : `${name.trim()}s`);
+
+/**
+ * People who should hear about a förhinder in a team: admins, the team's
+ * members and any extra ids (e.g. the stand-in) – minus the one acting.
+ */
+async function absenceAudience(teamId: number, exceptUserId: number, extra: (number | null | undefined)[] = []) {
+  const admins = await db.listAdmins();
+  const members = await db.listTeamMembers(teamId);
+  const ids = [
+    ...admins.map((a) => a.id),
+    ...members.map((m) => m.userId),
+    ...extra,
+  ].filter((id): id is number => id != null && id !== exceptUserId);
+  return Array.from(new Set(ids));
+}
+
 export const dutyTeamsRouter = router({
   // Public: an area's teams + member names. Phones only for functionaries/admins.
   list: publicProcedure.input(z.object({ area })).query(async ({ ctx, input }) => {
@@ -101,6 +119,8 @@ export const dutyTeamsRouter = router({
         week: a.week,
         memberId: a.memberId,
         message: showMsg ? a.message : null,
+        coveredByName: a.coveredByName,
+        coveredByMe: ctx.user != null && a.coveredByUserId === ctx.user.id,
       }));
     }),
 
@@ -125,7 +145,24 @@ export const dutyTeamsRouter = router({
       if (member.userId !== ctx.user.id && ctx.user.role !== "admin") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Du kan bara anmäla förhinder för dig själv." });
       }
+      const before = await db.getAbsence(input.year, input.week, member.id);
+      if (input.absent && before) return { success: true } as const; // already reported
       await db.setAbsence(input.year, input.week, member.id, input.absent, input.message || null);
+
+      // Withdrawn: tell those who were told about it that it's sorted.
+      if (!input.absent && before) {
+        const t = AREA_TEXT[team.area];
+        const standIn = before.coveredByName ? ` ${before.coveredByName} behöver inte hoppa in.` : "";
+        notifyTopicLater(
+          "duty_conflict",
+          {
+            title: "Förhinder borttaget ✅",
+            body: `${member.name} kan ändå ta ${t.jour} vecka ${input.week}.${standIn}`,
+            url: t.url,
+          },
+          { userIds: await absenceAudience(team.id, ctx.user.id, [member.userId, before.coveredByUserId]) }
+        );
+      }
 
       if (input.absent) {
         const t = AREA_TEXT[team.area];
@@ -150,6 +187,70 @@ export const dutyTeamsRouter = router({
           { userIds: Array.from(new Set(userIds)) }
         );
       }
+      return { success: true } as const;
+    }),
+
+  // Any functionary for the area (or admin): "Jag tar det" – stand in for a
+  // förhinder, or undo it. Tells the absent person, the team and admins.
+  coverAbsence: protectedProcedure
+    .input(
+      z.object({
+        year: z.number().int(),
+        week: z.number().int().min(1).max(53),
+        memberId: z.number().int(),
+        cover: z.boolean(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const absence = await db.getAbsence(input.year, input.week, input.memberId);
+      const member = absence ? await db.getRinkTeamMember(absence.memberId) : undefined;
+      const team = member ? await db.getRinkTeam(member.teamId) : undefined;
+      if (!absence || !member || !team) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Förhindret finns inte längre." });
+      }
+      if (!(await isFunctionaryFor(ctx.user, team.area))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Bara jourhavare kan hoppa in." });
+      }
+      const t = AREA_TEXT[team.area];
+      const me = displayName(ctx.user);
+
+      if (input.cover) {
+        if (member.userId === ctx.user.id) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Du kan inte ersätta dig själv – ta bort förhindret i stället." });
+        }
+        if (absence.coveredByUserId && absence.coveredByUserId !== ctx.user.id) {
+          throw new TRPCError({ code: "CONFLICT", message: `${absence.coveredByName} har redan tagit det.` });
+        }
+        if (absence.coveredByUserId === ctx.user.id) return { success: true } as const;
+        await db.setAbsenceCover(absence.id, { userId: ctx.user.id, name: me });
+        notifyTopicLater(
+          "duty_conflict",
+          {
+            title: "Förhinder löst ✅",
+            body: `${me} tar ${genitive(member.name)} pass i ${t.jour} vecka ${input.week}.`,
+            url: t.url,
+          },
+          { userIds: await absenceAudience(team.id, ctx.user.id, [member.userId]) }
+        );
+        return { success: true } as const;
+      }
+
+      // Undo: only the stand-in or an admin.
+      if (!absence.coveredByUserId) return { success: true } as const;
+      if (absence.coveredByUserId !== ctx.user.id && ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Bara den som hoppade in kan ångra." });
+      }
+      const who = absence.coveredByName ?? me;
+      await db.setAbsenceCover(absence.id, null);
+      notifyTopicLater(
+        "duty_conflict",
+        {
+          title: `Förhinder i ${t.jour} ⚠️`,
+          body: `${who} kan inte ta ${genitive(member.name)} pass vecka ${input.week} ändå – ersättare behövs.`,
+          url: t.url,
+        },
+        { userIds: await absenceAudience(team.id, ctx.user.id, [member.userId, absence.coveredByUserId]) }
+      );
       return { success: true } as const;
     }),
 });

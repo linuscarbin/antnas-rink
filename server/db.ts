@@ -1325,6 +1325,25 @@ export async function setAbsence(
   }
 }
 
+export async function getAbsence(year: number, week: number, memberId: number) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(dutyAbsences)
+    .where(and(eq(dutyAbsences.year, year), eq(dutyAbsences.week, week), eq(dutyAbsences.memberId, memberId)))
+    .limit(1);
+  return rows[0];
+}
+
+/** Sets (or clears, with null) who stands in for an absence. */
+export async function setAbsenceCover(id: number, cover: { userId: number; name: string } | null) {
+  const db = await requireDb();
+  await db
+    .update(dutyAbsences)
+    .set({ coveredByUserId: cover?.userId ?? null, coveredByName: cover?.name ?? null })
+    .where(eq(dutyAbsences.id, id));
+}
+
 /** The week's duty row for an area (rink or ski track). */
 export async function getAreaDuty(area: DutyArea, year: number, week: number) {
   return area === "hockeyrink" ? getDuty(year, week) : getSkiDuty(year, week);

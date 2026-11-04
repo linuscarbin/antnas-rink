@@ -71,7 +71,7 @@ export default function NotificationInbox() {
                     } ${clickable ? "hover:bg-accent/60" : "cursor-default"}`}
                   >
                     <span className="mt-0.5 text-lg leading-none" aria-hidden>
-                      {TOPIC_ICON[n.topic] ?? "🔔"}
+                      {n.title.includes("✅") ? "✅" : TOPIC_ICON[n.topic] ?? "🔔"}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2">
