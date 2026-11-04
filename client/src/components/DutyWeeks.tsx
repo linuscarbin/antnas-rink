@@ -117,7 +117,7 @@ function WeekCard({
           {isCurrent && <span className="text-xs font-bold text-primary">Denna vecka</span>}
         </div>
       </div>
-      <ul className="mt-3 space-y-1.5">
+      <ul className="mt-3 space-y-2.5">
         {d.team
           ? d.team.members.map((m) => {
               const absent = isAbsent(d.week, m.id);
@@ -183,19 +183,22 @@ export function MemberLine({
 }) {
   return (
     <li className="flex items-center gap-2 text-sm">
-      {/* Name, status and phone wrap on the left; buttons keep their own column. */}
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5">
-        <span className={`font-semibold ${absent ? "line-through text-muted-foreground" : ""}`}>{name}</span>
-        {absent &&
-          (coveredBy ? (
-            <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-              <Check className="h-3 w-3" /> {coveredBy} tar det
-            </span>
-          ) : (
-            <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-bold text-destructive">Förhinder</span>
-          ))}
+      {/* Same structure on every row: name (+status) on top, phone under it,
+          buttons in their own column to the right. */}
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <span className={`font-semibold ${absent ? "line-through text-muted-foreground" : ""}`}>{name}</span>
+          {absent &&
+            (coveredBy ? (
+              <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                <Check className="h-3 w-3" /> {coveredBy} tar det
+              </span>
+            ) : (
+              <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-bold text-destructive">Förhinder</span>
+            ))}
+        </div>
         {phone && (
-          <a href={`tel:${phone}`} className="inline-flex items-center gap-1 whitespace-nowrap text-primary">
+          <a href={`tel:${phone}`} className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-primary">
             <Phone className="h-3 w-3" /> {formatPhone(phone)}
           </a>
         )}
@@ -229,7 +232,7 @@ export function ThisWeekDuty({ area, href }: { area: DutyArea; href?: string }) 
       ) : d && (d.team || d.legacy.length) ? (
         <div className="mt-3">
           {d.team && <div className="font-extrabold">{d.team.name}</div>}
-          <ul className="mt-2 space-y-1.5">
+          <ul className="mt-2 space-y-2.5">
             {d.team
               ? d.team.members.map((m) => (
                   <MemberLine
