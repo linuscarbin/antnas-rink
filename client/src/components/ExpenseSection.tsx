@@ -372,7 +372,7 @@ export default function ExpenseSection({ area }: { area: Area }) {
                 // Own entries can be fixed until they're reimbursed; admins always.
                 const canEdit = isAdmin || (mine && !r.reimbursed);
                 return (
-                  <div key={r.id} className="iso-card p-4 flex items-center gap-4">
+                  <div key={r.id} className="iso-card p-4 flex flex-wrap items-center gap-x-4 gap-y-2">
                     {r.receiptUrl ? (
                       <a href={r.receiptUrl} target="_blank" rel="noreferrer">
                         <img
@@ -403,7 +403,7 @@ export default function ExpenseSection({ area }: { area: Area }) {
                         <div className="text-sm text-muted-foreground">{r.note}</div>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="ml-auto flex items-center gap-1.5 shrink-0">
                       {r.paymentMethod === "egen" && (
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-bold ${
