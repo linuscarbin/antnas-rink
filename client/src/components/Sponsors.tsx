@@ -40,7 +40,7 @@ export function SponsorLogo({
   small?: boolean;
 }) {
   return s.logoUrl ? (
-    <img src={s.logoUrl} alt={s.name} loading="lazy" className={`${className} w-auto max-w-full object-contain`} />
+    <img src={s.logoUrl} alt={s.name} loading="lazy" className={`h-full w-full object-contain ${className}`} />
   ) : (
     <span
       className={`line-clamp-2 break-words text-center font-extrabold leading-tight tracking-tight ${
@@ -73,7 +73,7 @@ export function SponsorSpotlight({ area }: { area: Area }) {
             s={s}
             className="iso-card flex items-center gap-4 p-4 sm:p-5 transition hover:border-primary/40"
           >
-            <span className="grid h-20 w-40 shrink-0 place-items-center rounded-xl bg-white p-2 ring-1 ring-border sm:w-48">
+            <span className="grid h-20 w-40 shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-2 ring-1 ring-border sm:w-48">
               <SponsorLogo s={s} className="max-h-16" />
             </span>
             <span className="min-w-0">
@@ -162,9 +162,9 @@ export function SponsorStrip() {
             <SponsorLink
               key={s.id}
               s={s}
-              className="grid h-16 min-w-24 place-items-center rounded-xl bg-white px-3 py-2 ring-1 ring-border transition hover:ring-primary/50"
+              className="grid h-14 w-32 place-items-center overflow-hidden rounded-xl bg-white px-3 py-2 ring-1 ring-border transition hover:ring-primary/50"
             >
-              <SponsorLogo s={s} className="max-h-12" />
+              <SponsorLogo s={s} small />
             </SponsorLink>
           ))}
         </div>
@@ -185,7 +185,7 @@ export function SponsorList({ sponsors }: { sponsors: SponsorRow[] }) {
           <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Huvudsponsorer</h2>
           {main.map((s) => (
             <SponsorLink key={s.id} s={s} className="iso-card flex flex-col gap-3 border-primary/40 p-4 sm:flex-row sm:items-center">
-              <span className="grid h-24 shrink-0 place-items-center rounded-xl bg-white p-3 ring-1 ring-border sm:w-56">
+              <span className="grid h-24 shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-3 ring-1 ring-border sm:w-56">
                 <SponsorLogo s={s} className="max-h-20" />
               </span>
               <span className="min-w-0">
@@ -209,7 +209,7 @@ export function SponsorList({ sponsors }: { sponsors: SponsorRow[] }) {
           <div className="grid gap-2 sm:grid-cols-2">
             {rest.map((s) => (
               <SponsorLink key={s.id} s={s} className="iso-card flex items-center gap-3 p-3">
-                <span className="grid h-14 w-24 shrink-0 place-items-center rounded-lg bg-white p-1.5 ring-1 ring-border">
+                <span className="grid h-14 w-24 shrink-0 place-items-center overflow-hidden rounded-lg bg-white p-1.5 ring-1 ring-border">
                   <SponsorLogo s={s} className="max-h-11" small />
                 </span>
                 <span className="min-w-0 flex-1">
