@@ -1,3 +1,4 @@
+import PageBar from "@/components/PageBar";
 import SiteLayout from "@/components/SiteLayout";
 import { SponsorList, useSponsors } from "@/components/Sponsors";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,7 +8,8 @@ export default function Sponsorer() {
   const { data, isLoading } = useSponsors();
   return (
     <SiteLayout hideSponsorStrip>
-      <div className="container max-w-3xl py-8">
+      <PageBar title="Våra sponsorer" icon={Heart} />
+      <div className="container max-w-3xl py-6">
         <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
           <Heart className="h-3.5 w-3.5" /> Tack!
         </span>

@@ -175,38 +175,53 @@ export function SponsorStrip() {
 
 /** Full list for /sponsorer. */
 export function SponsorList({ sponsors }: { sponsors: SponsorRow[] }) {
+  const main = sponsors.filter((s) => s.tier === "huvud");
+  const rest = sponsors.filter((s) => s.tier !== "huvud");
+  const site = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {sponsors.map((s) => (
-        <SponsorLink
-          key={s.id}
-          s={s}
-          className={`iso-card flex flex-col gap-3 p-5 transition hover:border-primary/40 ${
-            s.tier === "huvud" ? "sm:col-span-2 border-primary/40" : ""
-          }`}
-        >
-          <span className="grid h-28 place-items-center rounded-xl bg-white p-3 ring-1 ring-border">
-            <SponsorLogo s={s} className="max-h-24" />
-          </span>
-          <span>
-            <span className="flex flex-wrap items-center gap-2 font-extrabold">
-              {s.name}
-              {s.tier === "huvud" && (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-primary">
-                  Huvudsponsor
-                </span>
-              )}
-            </span>
-            {s.text && <span className="mt-1 block text-sm text-muted-foreground">{s.text}</span>}
-            {s.url && (
-              <span className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-primary">
-                {s.url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
-                <ExternalLink className="h-3.5 w-3.5" />
+    <div className="grid gap-6">
+      {main.length > 0 && (
+        <section className="grid gap-3">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Huvudsponsorer</h2>
+          {main.map((s) => (
+            <SponsorLink key={s.id} s={s} className="iso-card flex flex-col gap-3 border-primary/40 p-4 sm:flex-row sm:items-center">
+              <span className="grid h-24 shrink-0 place-items-center rounded-xl bg-white p-3 ring-1 ring-border sm:w-56">
+                <SponsorLogo s={s} className="max-h-20" />
               </span>
-            )}
-          </span>
-        </SponsorLink>
-      ))}
+              <span className="min-w-0">
+                <span className="block text-lg font-extrabold">{s.name}</span>
+                {s.text && <span className="mt-0.5 block text-sm text-muted-foreground">{s.text}</span>}
+                {s.url && (
+                  <span className="mt-1.5 inline-flex items-center gap-1 text-sm font-semibold text-primary">
+                    {site(s.url)} <ExternalLink className="h-3.5 w-3.5" />
+                  </span>
+                )}
+              </span>
+            </SponsorLink>
+          ))}
+        </section>
+      )}
+      {rest.length > 0 && (
+        <section className="grid gap-2">
+          {main.length > 0 && (
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Sponsorer</h2>
+          )}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {rest.map((s) => (
+              <SponsorLink key={s.id} s={s} className="iso-card flex items-center gap-3 p-3">
+                <span className="grid h-14 w-24 shrink-0 place-items-center rounded-lg bg-white p-1.5 ring-1 ring-border">
+                  <SponsorLogo s={s} className="max-h-11" small />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-bold">{s.name}</span>
+                  {s.text && <span className="line-clamp-2 text-sm text-muted-foreground">{s.text}</span>}
+                </span>
+                {s.url && <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" aria-label="Öppnar hemsida" />}
+              </SponsorLink>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
