@@ -18,7 +18,7 @@ import ExpenseSection from "@/components/ExpenseSection";
 import { BookingSection } from "@/pages/Boka";
 import { EventCard } from "@/components/EventsBoard";
 import RulesButton from "@/components/RulesButton";
-import { rinkVerdict, trackVerdict } from "@shared/verdict";
+import { rinkVerdict } from "@shared/verdict";
 import { Input } from "@/components/ui/input";
 import {
   BookOpen,
@@ -175,10 +175,10 @@ export default function Home() {
   const statusQuery = trpc.status.get.useQuery(undefined, {
     refetchInterval: 2 * 60 * 1000,
   });
-  const trackQuery = trpc.track.get.useQuery();
   const closedQuery = trpc.settings.getRinkClosed.useQuery();
   const eventsQuery = trpc.events.list.useQuery(undefined, { refetchInterval: 5 * 60 * 1000 });
-  const nextEvent = eventsQuery.data?.[0];
+  // Only work days for the rink (or both); ski-track ones show on /skidspar.
+  const nextEvent = eventsQuery.data?.find((e) => e.area !== "skidspar");
   const setPhoto = trpc.status.setPhoto.useMutation({
     onSuccess: () => {
       utils.status.get.invalidate();
@@ -239,10 +239,6 @@ export default function Home() {
         spoladAt: rink?.spoladAt,
         temperature: weatherQuery.data?.ok ? temp : null,
       });
-  const track = trackQuery.data;
-  const trackV = trackQuery.isLoading
-    ? null
-    : trackVerdict({ condition: track?.condition, dragetAt: track?.dragetAt });
   const rinkMeta = [
     rink?.plogadAt ? `Plogad ${timeAgo(rink.plogadAt)}` : null,
     rink?.spoladAt ? `Spolad ${timeAgo(rink.spoladAt)}` : null,
@@ -291,7 +287,7 @@ export default function Home() {
           <div className="mt-4">
             <RulesButton area="hockeyrink" />
           </div>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
+          <div className="mt-6 grid gap-4 max-w-4xl sm:grid-cols-2 items-start">
             <VerdictCard
               label="Hockeyrinken"
               verdict={rinkV}
@@ -305,24 +301,11 @@ export default function Home() {
                   : null
               }
             />
-            <VerdictCard
-              label="Skidspåret"
-              verdict={trackV}
-              href="/skidspar"
-              meta={
-                track?.dragetAt ? `Draget ${timeAgo(track.dragetAt)}` : undefined
-              }
-              photo={
-                track?.photoUrl
-                  ? { url: track.photoUrl, caption: `Foto ${timeAgo(track.photoAt)}` }
-                  : null
-              }
-            />
-            <div className="sm:col-span-2 lg:col-span-1">
+            <div>
               <CheckinWidget area="hockeyrink" />
             </div>
             {nextEvent && (
-              <div className="sm:col-span-2 lg:col-span-3">
+              <div className="sm:col-span-2">
                 <EventCard e={nextEvent} compact />
               </div>
             )}

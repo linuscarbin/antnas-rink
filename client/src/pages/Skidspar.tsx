@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
+import { EventCard } from "@/components/EventsBoard";
 import { getIsoWeek } from "@shared/rink";
 import { BookOpen, Receipt, Snowflake, Trees, Undo2, Users } from "lucide-react";
 import HubTabs, { useHubTab } from "@/components/HubTabs";
@@ -51,6 +52,8 @@ export default function Skidspar() {
   const [tab, setTab] = useHubTab(tabs, "oversikt");
   const utils = trpc.useUtils();
   const statusQuery = trpc.track.get.useQuery();
+  const eventsQuery = trpc.events.list.useQuery(undefined, { refetchInterval: 5 * 60 * 1000 });
+  const nextEvent = eventsQuery.data?.find((e) => e.area !== "hockeyrink");
   const [now] = useState(() => new Date());
 
   const [helpers, setHelpers] = useState("");
@@ -157,6 +160,7 @@ export default function Skidspar() {
                   : null
               }
             />
+            {nextEvent && <EventCard e={nextEvent} compact />}
           </div>
         </div>
       </section>
