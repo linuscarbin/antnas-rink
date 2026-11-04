@@ -75,6 +75,8 @@ export const dutyTeamsRouter = router({
         name,
         phone,
       });
+      // New functionaries don't need "ett gäng är på väg" (they can turn it on again).
+      if (input.userId) await db.removeTopicForUser(input.userId, "group");
       return { id };
     }),
 

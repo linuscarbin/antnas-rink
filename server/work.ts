@@ -11,7 +11,7 @@ const photo = (who: Who, at: Date) =>
 
 /**
  * Records rink work (plogad/spolad): effort for the leaderboard, the public
- * status card ("Plogad … av Kalle, Lisa och Olle") and the "nyspolad" push.
+ * status card ("Plogad … av Kalle, Lisa och Olle") and the plogad/nyspolad push.
  */
 export async function recordRinkWork(kind: "plogad" | "spolad", who: Who) {
   const now = new Date();
@@ -30,6 +30,11 @@ export async function recordRinkWork(kind: "plogad" | "spolad", who: Who) {
     );
     return db.updateRinkStatus({ spoladAt: now, spoladBy: by, ...photo(who, now) });
   }
+  notifyTopicLater(
+    "rink_plogad",
+    { title: "Rinken är plogad ❄️", body: `${by} har plogat rinken.`, url: "/" },
+    { throttleMs: 3 * HOUR }
+  );
   return db.updateRinkStatus({ plogadAt: now, plogadBy: by, ...photo(who, now) });
 }
 

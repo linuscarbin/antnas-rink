@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, gte, inArray, isNotNull, like, lt, lte, ne, or } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, isNotNull, isNull, like, lt, lte, ne, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { findBookingConflicts, type Zone } from "@shared/rink";
 import { normalizePhone } from "@shared/user";
@@ -13,6 +13,7 @@ import {
   guides,
   InsertGuide,
   pushSubscriptions,
+  notifications,
   InsertPushSubscription,
   rinkTeams,
   rinkTeamMembers,
@@ -1097,6 +1098,77 @@ export async function getPushSubscription(endpoint: string) {
 export async function deletePushSubscription(endpoint: string) {
   const db = await requireDb();
   await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+}
+
+/**
+ * Removes one topic from all of a user's devices, e.g. "group" when they
+ * become a functionary (they can turn it on again themselves).
+ */
+export async function removeTopicForUser(userId: number, topic: string) {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(pushSubscriptions)
+    .where(and(eq(pushSubscriptions.userId, userId), like(pushSubscriptions.topics, `%,${topic},%`)));
+  for (const r of rows) {
+    const next = r.topics.replace(`,${topic},`, ",");
+    await db
+      .update(pushSubscriptions)
+      .set({ topics: next === "," ? "" : next })
+      .where(eq(pushSubscriptions.id, r.id));
+  }
+}
+
+/* ------------------------------ Notification inbox ------------------------------ */
+
+const INBOX_DAYS = 60;
+
+export async function logNotifications(
+  userIds: number[],
+  msg: { topic: string; title: string; body: string; url?: string | null }
+) {
+  const ids = Array.from(new Set(userIds)).filter((id) => Number.isInteger(id));
+  if (!ids.length) return;
+  const db = await requireDb();
+  await db.insert(notifications).values(
+    ids.map((userId) => ({
+      userId,
+      topic: msg.topic.slice(0, 40),
+      title: msg.title.slice(0, 200),
+      body: msg.body.slice(0, 500),
+      url: msg.url ? msg.url.slice(0, 300) : null,
+    }))
+  );
+  // Keep the inbox small: drop old entries.
+  await db.delete(notifications).where(lt(notifications.createdAt, new Date(Date.now() - INBOX_DAYS * 86400_000)));
+}
+
+export async function listNotifications(userId: number, limit = 50) {
+  const db = await requireDb();
+  return db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt), desc(notifications.id))
+    .limit(limit);
+}
+
+export async function countUnreadNotifications(userId: number): Promise<number> {
+  const db = await requireDb();
+  const rows = await db
+    .select({ id: notifications.id })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)))
+    .limit(100);
+  return rows.length;
+}
+
+export async function markNotificationsRead(userId: number) {
+  const db = await requireDb();
+  await db
+    .update(notifications)
+    .set({ readAt: new Date() })
+    .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
 }
 
 /** Subscriptions for a topic, optionally limited to some users. */

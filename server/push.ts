@@ -69,11 +69,20 @@ async function sendTo(
   }
 }
 
+/** Saves a message in each person's inbox (never throws). */
+async function logInbox(userIds: number[], topic: string, msg: PushMessage) {
+  await db
+    .logNotifications(userIds, { topic, title: msg.title, body: msg.body, url: msg.url })
+    .catch((e) => console.warn("[Push] inbox log failed:", e));
+}
+
 /**
  * Notifies everyone subscribed to a topic.
- * - Skips during quiet hours (22–07 Swedish time) unless `ignoreQuiet`.
  * - `throttleMs`: at most one notification per topic (+ throttleKey) within
  *   that window, so e.g. several "spolad" markings don't spam people.
+ * - The message is saved in the inbox of every logged-in recipient (the
+ *   given `userIds`, or the users subscribed to the topic) – also at night.
+ * - The push itself is skipped during quiet hours (22–07) unless `ignoreQuiet`.
  */
 export async function notifyTopic(
   topic: PushTopic,
@@ -87,7 +96,6 @@ export async function notifyTopic(
   } = {}
 ): Promise<{ sent: number; skipped?: "quiet" | "throttled" }> {
   const now = opts.now ?? new Date();
-  if (!opts.ignoreQuiet && isQuietTime(now)) return { sent: 0, skipped: "quiet" };
 
   if (opts.throttleMs) {
     const key = `push_last_${topic}${opts.throttleKey ? `_${opts.throttleKey}` : ""}`;
@@ -98,8 +106,14 @@ export async function notifyTopic(
     await db.setSetting(key, String(now.getTime()));
   }
 
-  await getVapidKeys();
   const subs = await db.listPushSubscriptions(topic, opts.userIds);
+  const inboxUsers =
+    opts.userIds ?? subs.map((s) => s.userId).filter((u): u is number => u != null);
+  await logInbox(inboxUsers, topic, msg);
+
+  if (!opts.ignoreQuiet && isQuietTime(now)) return { sent: 0, skipped: "quiet" };
+
+  await getVapidKeys();
   const results = await Promise.all(subs.map((s) => sendTo(s, { tag: topic, ...msg })));
   const sent = results.filter(Boolean).length;
   if (subs.length) console.log(`[Push] ${topic}: sent ${sent}/${subs.length}`);
@@ -144,8 +158,9 @@ export function notifyConflict(area: "hockeyrink" | "skidspar", body: string): v
 export async function notifyUsers(
   userIds: number[],
   msg: PushMessage,
-  opts: { ignoreQuiet?: boolean; now?: Date } = {}
+  opts: { ignoreQuiet?: boolean; now?: Date; topic?: string } = {}
 ): Promise<{ sent: number; skipped?: "quiet" }> {
+  await logInbox(userIds, opts.topic ?? msg.tag?.split("-")[0] ?? "direct", msg);
   if (!opts.ignoreQuiet && isQuietTime(opts.now ?? new Date())) return { sent: 0, skipped: "quiet" };
   await getVapidKeys();
   const subs = await db.listPushSubscriptionsForUsers(Array.from(new Set(userIds)));

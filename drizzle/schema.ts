@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   int,
   mysqlEnum,
   mysqlTable,
@@ -579,3 +580,25 @@ export const sponsors = mysqlTable("sponsors", {
 
 export type Sponsor = typeof sponsors.$inferSelect;
 export type InsertSponsor = typeof sponsors.$inferInsert;
+
+/**
+ * Per-person notification inbox: every notification meant for a logged-in
+ * user is stored here (even if the push itself was skipped at night or the
+ * app isn't installed), so it can be found again under Notiser.
+ */
+export const notifications = mysqlTable(
+  "notifications",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    topic: varchar("topic", { length: 40 }).notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    body: varchar("body", { length: 500 }).notNull(),
+    url: varchar("url", { length: 300 }),
+    readAt: timestamp("readAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("notifications_user_created").on(t.userId, t.createdAt)]
+);
+
+export type NotificationRow = typeof notifications.$inferSelect;

@@ -69,6 +69,21 @@ export default function SiteLayout({
   hideSponsorStrip?: boolean;
 }) {
   const { user, isAuthenticated, logout } = useAuth();
+  const unreadQuery = trpc.push.unreadCount.useQuery(undefined, {
+    enabled: isAuthenticated,
+    refetchInterval: 2 * 60 * 1000,
+    refetchOnWindowFocus: true,
+  });
+  const unread = isAuthenticated ? unreadQuery.data ?? 0 : 0;
+  // Red number on the home-screen icon (installed app, where supported).
+  useEffect(() => {
+    const nav = navigator as Navigator & {
+      setAppBadge?: (n?: number) => Promise<void>;
+      clearAppBadge?: () => Promise<void>;
+    };
+    if (unread > 0) nav.setAppBadge?.(unread).catch(() => {});
+    else nav.clearAppBadge?.().catch(() => {});
+  }, [unread]);
   const [location] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   // Sticky things below the header (hub tabs) need its real height, which
@@ -134,9 +149,14 @@ export default function SiteLayout({
           </nav>
 
           <div className="flex items-center gap-2 shrink-0">
-            <Link href="/notiser" aria-label="Notiser">
-              <Button variant="ghost" size="icon" title="Notiser">
+            <Link href="/notiser" aria-label={unread ? `Notiser, ${unread} nya` : "Notiser"}>
+              <Button variant="ghost" size="icon" title="Notiser" className="relative">
                 <Bell className="h-4 w-4" />
+                {unread > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-white">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
               </Button>
             </Link>
             {user?.role === "admin" && (

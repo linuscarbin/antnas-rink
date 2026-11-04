@@ -21,12 +21,19 @@ export const settingsRouter = router({
     .input(z.object({ message: z.string().trim().max(200) }))
     .mutation(async ({ ctx, input }) => {
       await assertFunctionary(ctx.user, "hockeyrink");
+      const wasClosed = Boolean((await db.getSetting(RINK_CLOSED_KEY))?.settingValue);
       await db.setSetting(RINK_CLOSED_KEY, input.message || null);
       if (input.message) {
         notifyTopicLater(
           "rink_closed",
           { title: "Rinken är stängd 🔴", body: input.message, url: "/" },
           { throttleMs: 30 * 60 * 1000 }
+        );
+      } else if (wasClosed) {
+        notifyTopicLater(
+          "rink_closed",
+          { title: "Rinken är öppen igen 🟢", body: "Välkommen ut på isen!", url: "/" },
+          { throttleMs: 30 * 60 * 1000, throttleKey: "open" }
         );
       }
       return { message: input.message } as const;

@@ -169,6 +169,20 @@
       "when": 1793820866869,
       "tag": "0023_slimy_warpath",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1793826303922,
+      "tag": "0024_goofy_moonstone",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1793826304913,
+      "tag": "0025_strip_group_for_functionaries",
+      "breakpoints": true
     }
   ]
 }

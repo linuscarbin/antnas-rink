@@ -2,7 +2,7 @@ import { z } from "zod";
 import { ALL_TOPICS, decodeTopics, encodeTopics, isDutyTopic } from "@shared/push";
 import * as db from "../db";
 import { functionaryAreas } from "../_core/functionary";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getVapidKeys, sendTest } from "../push";
 
 const subscriptionInput = z.object({
@@ -56,6 +56,30 @@ export const pushRouter = router({
       await db.deletePushSubscription(input.endpoint);
       return { success: true } as const;
     }),
+
+  // Inbox: the logged-in user's latest notifications (also ones not pushed).
+  inbox: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await db.listNotifications(ctx.user.id);
+    return rows.map((r) => ({
+      id: r.id,
+      topic: r.topic,
+      title: r.title,
+      body: r.body,
+      url: r.url,
+      createdAt: r.createdAt,
+      unread: r.readAt == null,
+    }));
+  }),
+
+  // Number for the red badge on the bell (0 when logged out).
+  unreadCount: publicProcedure.query(async ({ ctx }) =>
+    ctx.user ? db.countUnreadNotifications(ctx.user.id) : 0
+  ),
+
+  markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
+    await db.markNotificationsRead(ctx.user.id);
+    return { success: true } as const;
+  }),
 
   test: publicProcedure
     .input(z.object({ endpoint: z.string().max(500) }))
