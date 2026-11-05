@@ -124,6 +124,8 @@ export function EventCard({
   const answer = (a: Answer) =>
     respond.mutate({ id: e.id, answer: e.myAnswer === a ? null : a, comment: comment.trim() || undefined });
   const byAnswer = (a: Answer) => e.responses.filter((r) => r.answer === a);
+  // The list keeps work days a few hours after they end – show them as done.
+  const ended = new Date(e.endsAt).getTime() < Date.now();
 
   return (
     <div className="iso-card p-5">
@@ -132,7 +134,14 @@ export function EventCard({
           <Hammer className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="text-lg font-extrabold leading-tight">{e.title}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-lg font-extrabold leading-tight">{e.title}</span>
+            {ended && (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold uppercase text-muted-foreground">
+                Avslutad
+              </span>
+            )}
+          </div>
           <div className="mt-0.5 text-sm font-semibold text-primary">
             {formatJobWindow(new Date(e.startsAt), new Date(e.endsAt))}
           </div>
@@ -154,7 +163,9 @@ export function EventCard({
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5 text-sm">
         <Users className="h-4 w-4 text-primary" />
-        <strong>{e.counts.yes} kommer</strong>
+        <strong>
+          {e.counts.yes} {ended ? "var med" : "kommer"}
+        </strong>
         {e.counts.maybe > 0 && <span className="text-muted-foreground">· {e.counts.maybe} kanske</span>}
       </div>
       {!compact && e.responses.length > 0 && (
@@ -172,7 +183,7 @@ export function EventCard({
         </div>
       )}
 
-      {isAuthenticated ? (
+      {ended ? null : isAuthenticated ? (
         <div className="mt-4 grid gap-2">
           <div className="flex flex-wrap gap-2">
             {(["yes", "maybe", "no"] as const).map((a) => (

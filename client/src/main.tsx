@@ -10,6 +10,14 @@ import "./index.css";
 
 const queryClient = new QueryClient();
 
+// A push notification arrived while the app is open (the service worker
+// tells us): refresh what's on screen so it matches the notification.
+if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.type === "push") queryClient.invalidateQueries();
+  });
+}
+
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;

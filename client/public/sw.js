@@ -12,8 +12,12 @@ self.addEventListener("push", (event) => {
     data = { title: "Antnäs Vinter", body: event.data ? event.data.text() : "" };
   }
   const title = data.title || "Antnäs Vinter";
+  // Open app windows refresh their data so they match the notification.
+  const tellOpenWindows = self.clients
+    .matchAll({ type: "window", includeUncontrolled: true })
+    .then((wins) => wins.forEach((w) => w.postMessage({ type: "push", tag: data.tag || null })));
   event.waitUntil(
-    self.registration.showNotification(title, {
+    Promise.all([tellOpenWindows, self.registration.showNotification(title, {
       body: data.body || "",
       icon: "/icons/icon-192.png",
       badge: "/icons/badge-96.png",
@@ -21,7 +25,7 @@ self.addEventListener("push", (event) => {
       renotify: Boolean(data.tag),
       data: { url: data.url || "/" },
       lang: "sv",
-    })
+    })])
   );
 });
 

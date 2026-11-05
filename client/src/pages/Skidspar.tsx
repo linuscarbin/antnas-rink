@@ -20,7 +20,6 @@ import { EventCard } from "@/components/EventsBoard";
 import { getIsoWeek } from "@shared/rink";
 import { BookOpen, Receipt, Snowflake, Trees, Undo2, Users } from "lucide-react";
 import HubTabs, { useHubTab } from "@/components/HubTabs";
-import GuidesSection from "@/components/GuidesSection";
 import JobsBoard from "@/components/JobsBoard";
 import RefuelSection from "@/components/RefuelSection";
 import ExpenseSection from "@/components/ExpenseSection";
@@ -30,8 +29,11 @@ import VerdictCard from "@/components/VerdictCard";
 import PhotoPicker from "@/components/PhotoPicker";
 import DutyWeeks, { ThisWeekDuty } from "@/components/DutyWeeks";
 import { trackVerdict } from "@shared/verdict";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
+
+// Guides pull in the markdown renderer – only load it on the Info tab.
+const GuidesSection = lazy(() => import("@/components/GuidesSection"));
 
 const CONDITIONS = ["Mycket bra", "Bra", "Hyfsat", "Dåligt", "Ej åkbart"] as const;
 
@@ -53,9 +55,13 @@ export default function Skidspar() {
   ];
   const [tab, setTab] = useHubTab(tabs, "oversikt");
   const utils = trpc.useUtils();
-  const statusQuery = trpc.track.get.useQuery();
+  // Same refresh rate as the rink status.
+  const statusQuery = trpc.track.get.useQuery(undefined, { refetchInterval: 2 * 60 * 1000 });
   const eventsQuery = trpc.events.list.useQuery(undefined, { refetchInterval: 5 * 60 * 1000 });
-  const nextEvent = eventsQuery.data?.find((e) => e.area !== "hockeyrink");
+  const nextEvent = eventsQuery.data?.find(
+    // Upcoming or ongoing only – the list also keeps work days that just ended.
+    (e) => e.area !== "hockeyrink" && new Date(e.endsAt).getTime() > Date.now()
+  );
   const [now] = useState(() => new Date());
 
   const [helpers, setHelpers] = useState("");
@@ -64,6 +70,9 @@ export default function Skidspar() {
   const invalidateTrack = () => {
     utils.track.get.invalidate();
     utils.track.leaderboard.invalidate();
+    // Marking by hand also completes planned jobs (Planera jobb + lagchatt).
+    utils.jobs.list.invalidate();
+    utils.teamChat.list.invalidate();
   };
   const markDraget = trpc.track.markDraget.useMutation({
     onSuccess: () => {
@@ -112,7 +121,11 @@ export default function Skidspar() {
         </div>
       )}
 
-      {tab === "info" && <GuidesSection area="skidspar" />}
+      {tab === "info" && (
+        <Suspense fallback={<div className="container py-6"><div className="h-24 animate-pulse rounded-2xl bg-muted" /></div>}>
+          <GuidesSection area="skidspar" />
+        </Suspense>
+      )}
 
       {tab === "kostnader" && isTrackFunctionary && (
         <div className="pt-6">

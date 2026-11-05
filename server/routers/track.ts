@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { displayName } from "@shared/user";
 import * as db from "../db";
+import { closeJobsForManualWork } from "../jobSync";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { assertFunctionary } from "../_core/functionary";
 import { parseHelpers } from "@shared/jobs";
@@ -36,12 +37,15 @@ export const trackRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       await assertFunctionary(ctx.user, "skidspar");
-      return recordTrackWork({
+      const name = displayName(ctx.user);
+      const result = await recordTrackWork({
         userId: ctx.user.id,
-        name: displayName(ctx.user),
+        name,
         helpers: parseHelpers(input.helpers),
         photoUrl: input.photoUrl,
       });
+      await closeJobsForManualWork("skidspar", "draget", { userId: ctx.user.id, name });
+      return result;
     }),
 
   // Undo the latest draget marking.

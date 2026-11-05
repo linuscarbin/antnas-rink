@@ -9,18 +9,13 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { jourUrl } from "@shared/push";
 import { notifyTopicLater } from "../push";
 import { jobLine, postJobCard, postJobEvent } from "../teamChat";
+import { DONE_TEXT } from "../jobSync";
 import { recordRinkWork, recordTrackWork } from "../work";
 
 const area = z.enum(["hockeyrink", "skidspar"]);
 const HOUR = 3600 * 1000;
 
-const DONE_TEXT: Record<(typeof JOB_KINDS)[number], string> = {
-  plog: "Klart – plogat ✅",
-  spol: "Klart – spolat ✅",
-  plog_spol: "Klart – plogat och spolat ✅",
-  spar: "Klart – spåret draget ✅",
-  annat: "Klart ✅",
-};
+
 
 /** Team members a job concerns: the proposer's team, else the week's team. */
 async function jobTeamMembers(job: { teamId: number | null; area: "hockeyrink" | "skidspar"; startsAt: Date }) {
