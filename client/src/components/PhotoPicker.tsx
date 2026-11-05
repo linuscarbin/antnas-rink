@@ -9,10 +9,13 @@ export default function PhotoPicker({
   value,
   onChange,
   label = "Bifoga foto",
+  trim = false,
 }: {
   value: string | null;
   onChange: (url: string | null) => void;
   label?: string;
+  /** Cut away empty margins (logos). */
+  trim?: boolean;
 }) {
   const ref = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -20,7 +23,7 @@ export default function PhotoPicker({
   async function pick(file: File) {
     setBusy(true);
     try {
-      onChange(await uploadFile(file));
+      onChange(await uploadFile(file, { trim }));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Uppladdning misslyckades.");
     } finally {

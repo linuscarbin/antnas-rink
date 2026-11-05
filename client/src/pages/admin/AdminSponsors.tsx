@@ -76,8 +76,11 @@ function SponsorForm({
       </div>
       <div className="grid gap-1.5">
         <Label>Logga</Label>
-        <PhotoPicker value={d.logoUrl || null} label="Ladda upp logga" onChange={(u) => set("logoUrl", u ?? "")} />
-        <p className="text-xs text-muted-foreground">Helst en logga med vit eller genomskinlig bakgrund.</p>
+        <PhotoPicker value={d.logoUrl || null} label="Ladda upp logga"
+          trim onChange={(u) => set("logoUrl", u ?? "")} />
+        <p className="text-xs text-muted-foreground">
+          Helst med vit eller genomskinlig bakgrund. Tom kant runt loggan tas bort automatiskt.
+        </p>
       </div>
       <div className="grid gap-1.5">
         <Label htmlFor="sp-text">Kort text (valfritt)</Label>
@@ -249,8 +252,8 @@ export default function AdminSponsors() {
               <div key={s.id}>{form}</div>
             ) : (
               <div key={s.id} className={`iso-card flex items-center gap-3 p-3 ${s.active ? "" : "opacity-60"}`}>
-                <span className="grid h-14 w-20 shrink-0 place-items-center rounded-lg bg-white p-1.5 ring-1 ring-border">
-                  <SponsorLogo s={s} className="max-h-11" small />
+                <span className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white p-1.5 ring-1 ring-border">
+                  <SponsorLogo s={s} box="admin" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2 font-bold">

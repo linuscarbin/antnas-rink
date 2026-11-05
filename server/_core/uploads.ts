@@ -84,8 +84,19 @@ export function registerUploads(app: Express) {
         let contentType: string;
         if (isImage) {
           // Re-encode + downscale as webp (strips metadata, caps size).
-          buffer = await sharp(req.file.buffer)
-            .rotate()
+          // ?trim=1 (logos): cut away empty white/transparent margins so the
+          // logo fills its box. Falls back to the untrimmed image if trimming
+          // isn't possible (e.g. a single-colour image).
+          let img = sharp(req.file.buffer).rotate();
+          if (req.query.trim === "1") {
+            try {
+              const trimmed = await img.clone().trim({ threshold: 12 }).toBuffer();
+              img = sharp(trimmed);
+            } catch {
+              // keep the original
+            }
+          }
+          buffer = await img
             .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
             .webp({ quality: 82 })
             .toBuffer();
