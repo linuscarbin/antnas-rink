@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { ExternalLink, Heart } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 
 type Area = "hockeyrink" | "skidspar";
@@ -28,27 +29,65 @@ function SponsorLink({ s, className, children }: { s: SponsorRow; className?: st
   );
 }
 
-/** Logo, or the name as a word mark when there is no logo. */
-export function SponsorLogo({
-  s,
-  className = "h-12",
-  small = false,
-}: {
-  s: SponsorRow;
-  className?: string;
-  /** Tiny box (admin list): smaller word mark that wraps. */
-  small?: boolean;
-}) {
-  return s.logoUrl ? (
-    <img src={s.logoUrl} alt={s.name} loading="lazy" className={`h-full w-full object-contain ${className}`} />
-  ) : (
-    <span
-      className={`line-clamp-2 break-words text-center font-extrabold leading-tight tracking-tight ${
-        small ? "text-xs" : "text-lg"
-      }`}
-    >
-      {s.name}
-    </span>
+/**
+ * Room for a logo in each place (content box in px) and the area a logo
+ * should cover. Logos are sized by their shape so they *look* equally big:
+ * a wide word mark gets more width, a round badge more height – instead of
+ * everything being squeezed to the same height or width.
+ */
+const LOGO_BOX = {
+  ticker: { maxW: 96, maxH: 22, area: 1000 },
+  strip: { maxW: 104, maxH: 40, area: 2600 },
+  spot: { maxW: 168, maxH: 64, area: 6000 },
+  listMain: { maxW: 240, maxH: 72, area: 9000 },
+  list: { maxW: 100, maxH: 44, area: 2400 },
+  admin: { maxW: 68, maxH: 44, area: 1800 },
+} as const;
+export type LogoBox = keyof typeof LOGO_BOX;
+
+function fitLogo(ratio: number, box: (typeof LOGO_BOX)[LogoBox]) {
+  const w = Math.sqrt(box.area * ratio);
+  const h = w / ratio;
+  const scale = Math.min(1, box.maxW / w, box.maxH / h);
+  return { width: Math.round(w * scale), height: Math.round(h * scale) };
+}
+
+/** Logo (balanced by shape), or the name as a word mark when there is no logo. */
+export function SponsorLogo({ s, box }: { s: SponsorRow; box: LogoBox }) {
+  const dims = LOGO_BOX[box];
+  const [ratio, setRatio] = useState<number | null>(null);
+  const ref = useRef<HTMLImageElement>(null);
+  const measure = (img: HTMLImageElement | null) => {
+    if (img?.naturalWidth && img.naturalHeight) setRatio(img.naturalWidth / img.naturalHeight);
+  };
+  // Cached images can finish before React attaches onLoad.
+  useEffect(() => {
+    if (ref.current?.complete) measure(ref.current);
+  }, [s.logoUrl]);
+
+  if (!s.logoUrl) {
+    return (
+      <span
+        className={`line-clamp-2 break-words text-center font-extrabold leading-tight tracking-tight ${
+          box === "ticker" ? "whitespace-nowrap text-xs" : box === "strip" || box === "spot" || box === "listMain" ? "text-base" : "text-xs"
+        }`}
+        style={{ maxWidth: dims.maxW }}
+      >
+        {s.name}
+      </span>
+    );
+  }
+  const size = ratio ? fitLogo(ratio, dims) : { maxWidth: dims.maxW, maxHeight: dims.maxH };
+  return (
+    <img
+      ref={ref}
+      src={s.logoUrl}
+      alt={s.name}
+      loading="lazy"
+      onLoad={(e) => measure(e.currentTarget)}
+      className="block shrink-0 object-contain"
+      style={size}
+    />
   );
 }
 
@@ -73,8 +112,8 @@ export function SponsorSpotlight({ area }: { area: Area }) {
             s={s}
             className="iso-card flex items-center gap-4 p-4 sm:p-5 transition hover:border-primary/40"
           >
-            <span className="grid h-20 w-40 shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-2 ring-1 ring-border sm:w-48">
-              <SponsorLogo s={s} className="max-h-16" />
+            <span className="flex h-20 w-44 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-2 ring-1 ring-border sm:w-48">
+              <SponsorLogo s={s} box="spot" />
             </span>
             <span className="min-w-0">
               <span className="flex items-center gap-1.5 font-extrabold">
@@ -105,11 +144,7 @@ export function SponsorTicker() {
   const item = (s: SponsorRow, key: string, hidden: boolean) => {
     const inner = (
       <span className="flex h-7 items-center px-4">
-        {s.logoUrl ? (
-          <img src={s.logoUrl} alt={s.name} className="h-5 w-auto max-w-24 object-contain" loading="lazy" />
-        ) : (
-          <span className="whitespace-nowrap text-xs font-bold tracking-tight">{s.name}</span>
-        )}
+        <SponsorLogo s={s} box="ticker" />
       </span>
     );
     const common = { className: "shrink-0", ...(hidden ? { "aria-hidden": true, tabIndex: -1 } : {}) };
@@ -162,9 +197,9 @@ export function SponsorStrip() {
             <SponsorLink
               key={s.id}
               s={s}
-              className="grid h-14 w-32 place-items-center overflow-hidden rounded-xl bg-white px-3 py-2 ring-1 ring-border transition hover:ring-primary/50"
+              className="flex h-14 w-32 items-center justify-center overflow-hidden rounded-xl bg-white px-3 py-2 ring-1 ring-border transition hover:ring-primary/50"
             >
-              <SponsorLogo s={s} small />
+              <SponsorLogo s={s} box="strip" />
             </SponsorLink>
           ))}
         </div>
@@ -185,8 +220,8 @@ export function SponsorList({ sponsors }: { sponsors: SponsorRow[] }) {
           <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Huvudsponsorer</h2>
           {main.map((s) => (
             <SponsorLink key={s.id} s={s} className="iso-card flex flex-col gap-3 border-primary/40 p-4 sm:flex-row sm:items-center">
-              <span className="grid h-24 shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-3 ring-1 ring-border sm:w-56">
-                <SponsorLogo s={s} className="max-h-20" />
+              <span className="flex h-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-3 ring-1 ring-border sm:w-64">
+                <SponsorLogo s={s} box="listMain" />
               </span>
               <span className="min-w-0">
                 <span className="block text-lg font-extrabold">{s.name}</span>
@@ -209,8 +244,8 @@ export function SponsorList({ sponsors }: { sponsors: SponsorRow[] }) {
           <div className="grid gap-2 sm:grid-cols-2">
             {rest.map((s) => (
               <SponsorLink key={s.id} s={s} className="iso-card flex items-center gap-3 p-3">
-                <span className="grid h-14 w-24 shrink-0 place-items-center overflow-hidden rounded-lg bg-white p-1.5 ring-1 ring-border">
-                  <SponsorLogo s={s} className="max-h-11" small />
+                <span className="flex h-14 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white p-1.5 ring-1 ring-border">
+                  <SponsorLogo s={s} box="list" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-bold">{s.name}</span>

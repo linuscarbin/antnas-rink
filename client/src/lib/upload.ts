@@ -1,5 +1,6 @@
 /** Uploads an image/PDF via /api/upload and returns its public URL. */
-export async function uploadFile(file: File): Promise<string> {
+/** `trim`: cut away empty margins (for logos). */
+export async function uploadFile(file: File, opts: { trim?: boolean } = {}): Promise<string> {
   if (file.size > 8 * 1024 * 1024) {
     throw new Error("Filen är för stor (max 8 MB).");
   }
@@ -12,7 +13,7 @@ export async function uploadFile(file: File): Promise<string> {
   } catch {
     // ignore
   }
-  const resp = await fetch("/api/upload", {
+  const resp = await fetch(opts.trim ? "/api/upload?trim=1" : "/api/upload", {
     method: "POST",
     body: form,
     credentials: "include",
