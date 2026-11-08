@@ -44,7 +44,7 @@ function Router() {
       {FEATURES.bilbingo && <Route path="/lag/:token" component={LagFamiljer} />}
       {/* Old pages now live as tabs in the Rinken hub. */}
       <Route path="/schema"><Redirect to="/?flik=jour" replace /></Route>
-      <Route path="/boka"><Redirect to="/?flik=boka" replace /></Route>
+      <Route path="/boka"><Redirect to={FEATURES.booking ? "/?flik=boka" : "/"} replace /></Route>
       <Route path="/info"><Redirect to="/?flik=info" replace /></Route>
       <Route path="/funktionar"><Redirect to="/?flik=jour" replace /></Route>
       <Route path="/anslagstavla" component={Anslagstavla} />

@@ -1,3 +1,4 @@
+import { FEATURES } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { displayName } from "@shared/user";
 import { z } from "zod";
@@ -60,6 +61,7 @@ export const bookingsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!FEATURES.booking) throw new TRPCError({ code: "FORBIDDEN", message: "Bokning av rinken är avstängd just nu." });
       const start = new Date(input.startTime);
       const end = new Date(input.endTime);
 

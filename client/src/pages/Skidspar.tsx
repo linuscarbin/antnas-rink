@@ -154,7 +154,7 @@ export default function Skidspar() {
               <RulesButton area="skidspar" />
             </div>
           </div>
-          <div className="mt-6 grid max-w-xl gap-4">
+          <div className="mt-6 grid max-w-4xl items-start gap-4 sm:grid-cols-2">
             <VerdictCard
               label="Skidspåret"
               loading={statusQuery.isLoading}
@@ -176,12 +176,16 @@ export default function Skidspar() {
                   : null
               }
             />
-            {nextEvent && <EventCard e={nextEvent} compact />}
+            {/* Skötseln först: veckans spårjour bredvid statusen. */}
+            <ThisWeekDuty area="skidspar" href="/skidspar?flik=jour" />
+              {nextEvent && (
+              <div className="sm:col-span-2">
+                <EventCard e={nextEvent} compact />
+              </div>
+            )}
           </div>
         </div>
       </section>
-
-      <SponsorSpotlight area="skidspar" />
 
       <div className="container py-8 grid gap-6 lg:grid-cols-3">
         {/* Status */}
@@ -357,7 +361,6 @@ export default function Skidspar() {
 
         {/* This week's ski duty */}
         <div className="grid gap-6 content-start">
-          <ThisWeekDuty area="skidspar" href="/skidspar?flik=jour" />
 
           <Leaderboard
             title="Insatser i säsong"
@@ -369,6 +372,9 @@ export default function Skidspar() {
       </div>
 
 
+      {/* Sponsors after the duty tools, so functionaries reach those first. */}
+      <SponsorSpotlight area="skidspar" />
+      <div className="pb-8" />
       </>
       )}
     </SiteLayout>

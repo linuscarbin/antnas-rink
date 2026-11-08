@@ -21,7 +21,7 @@ import {
   DEFAULT_FUNCTIONARY_TOPICS,
   DEFAULT_PUBLIC_TOPICS,
   DUTY_TOPICS,
-  PUBLIC_TOPICS,
+  VISIBLE_PUBLIC_TOPICS,
   TOPIC_INFO,
   type PushTopic,
 } from "@shared/push";
@@ -113,7 +113,7 @@ export default function Notiser() {
     }
   }
 
-  const visibleTopics: PushTopic[] = [...PUBLIC_TOPICS, ...(isFunctionary ? DUTY_TOPICS : [])];
+  const visibleTopics: PushTopic[] = [...VISIBLE_PUBLIC_TOPICS, ...(isFunctionary ? DUTY_TOPICS : [])];
 
   return (
     <SiteLayout>
@@ -124,8 +124,8 @@ export default function Notiser() {
           </span>
           <h1 className="mt-3 text-3xl sm:text-4xl font-extrabold tracking-tight">Notiser</h1>
           <p className="mt-2 text-muted-foreground max-w-2xl">
-            Få en notis i telefonen när rinken är plogad eller nyspolad, eller när
-            ett gäng är på väg. Inget konto behövs. Inga notiser mellan 22 och 07.
+            Få en notis i telefonen när rinken är plogad eller nyspolad och när
+            spåret är draget. Inget konto behövs. Inga notiser mellan 22 och 07.
           </p>
         </div>
       </section>
@@ -206,7 +206,7 @@ export default function Notiser() {
                     />
                     <span>
                       <span className="font-semibold">{TOPIC_INFO[t].label}</span>
-                      {i === PUBLIC_TOPICS.length && (
+                      {i === VISIBLE_PUBLIC_TOPICS.length && (
                         <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary">
                           Jour
                         </span>
