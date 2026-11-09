@@ -298,8 +298,11 @@ export default function Home() {
             <Snowflake className="h-3.5 w-3.5" /> Antnäs Vinter
           </span>
           <h1 className="mt-3 text-3xl sm:text-5xl font-extrabold leading-[1.05] tracking-tight">
-            Är isen <span className="text-primary">åkbar</span> ikväll?
+            <span className="text-primary">Hockeyrinken</span>
           </h1>
+          <p className="mt-2 text-base text-muted-foreground sm:text-lg">
+            Senast plogat och spolat, och vem som har rinkjour.
+          </p>
           <div className="mt-4">
             <RulesButton area="hockeyrink" />
           </div>

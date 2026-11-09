@@ -143,12 +143,11 @@ export default function Skidspar() {
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
               <Trees className="h-3.5 w-3.5" /> Antnäs skidspår
             </span>
-            <h1 className="mt-4 text-4xl sm:text-5xl font-extrabold leading-[1.05] tracking-tight">
-              Hur är <span className="text-primary">spåret</span> idag?
+            <h1 className="mt-3 text-3xl sm:text-5xl font-extrabold leading-[1.05] tracking-tight">
+              <span className="text-primary">Skidspåret</span>
             </h1>
-            <p className="mt-3 text-lg text-muted-foreground">
-              Se när längdspåret senast drogs, aktuellt spårskick och vem som har
-              spårjour.
+            <p className="mt-2 text-base text-muted-foreground sm:text-lg">
+              Senast draget, spårskick och vem som har spårjour.
             </p>
             <div className="mt-4">
               <RulesButton area="skidspar" />
