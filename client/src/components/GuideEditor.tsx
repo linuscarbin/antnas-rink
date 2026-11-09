@@ -27,13 +27,14 @@ import {
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
-export type GuideArea = "publik" | "alla" | "hockeyrink" | "skidspar";
+export type GuideArea = "publik" | "alla" | "hockeyrink" | "skidspar" | "admin";
 
 export const GUIDE_AREA_LABEL: Record<GuideArea, string> = {
   publik: "Alla besökare (Regler & info)",
   alla: "Alla jourhavare",
   hockeyrink: "Bara rinkjouren",
   skidspar: "Bara spårjouren",
+  admin: "Bara admin (koder, nycklar)",
 };
 
 export type GuideDraft = {

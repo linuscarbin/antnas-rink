@@ -422,7 +422,7 @@ export const guides = mysqlTable("guides", {
    * Visibility: "publik" = everyone (rules, tips), "alla" = every
    * functionary, otherwise only that area's duty members.
    */
-  area: mysqlEnum("area", ["publik", "alla", "hockeyrink", "skidspar"]).default("alla").notNull(),
+  area: mysqlEnum("area", ["publik", "alla", "hockeyrink", "skidspar", "admin"]).default("alla").notNull(),
   /** Markdown body. */
   body: text("body").notNull(),
   sortOrder: int("sortOrder").default(0).notNull(),

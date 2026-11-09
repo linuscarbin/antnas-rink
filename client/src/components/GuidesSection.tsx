@@ -4,7 +4,7 @@ import GuideEditor, { GUIDE_AREA_LABEL, type GuideArea, type GuideDraft } from "
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, ChevronDown, Lock, Pencil, Plus } from "lucide-react";
+import { BookOpen, ChevronDown, Lock, Pencil, Plus, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -37,6 +37,8 @@ export default function GuidesSection({ area }: { area: Area }) {
   // Public tips are shown in both hubs; duty guides only in their own area.
   const publicGuides = all.filter((g) => g.area === "publik");
   const dutyGuides = isFunctionary ? all.filter((g) => g.area === "alla" || g.area === area) : [];
+  // Codes and keys: only admins get these from the server at all.
+  const adminGuides = isAdmin ? all.filter((g) => g.area === "admin") : [];
   const loading = anyFunctionary ? dutyQuery.isLoading : publicQuery.isLoading;
 
   const done = (msg: string) => {
@@ -51,7 +53,7 @@ export default function GuidesSection({ area }: { area: Area }) {
   const deleteGuide = trpc.guides.delete.useMutation({ onSuccess: () => done("Guiden är borttagen."), onError });
 
   const writableAreas: GuideArea[] = isAdmin
-    ? [area, "alla", "publik", area === "hockeyrink" ? "skidspar" : "hockeyrink"]
+    ? [area, "alla", "publik", area === "hockeyrink" ? "skidspar" : "hockeyrink", "admin"]
     : [area, "alla", "publik"];
 
   function save(d: GuideDraft) {
@@ -123,6 +125,37 @@ export default function GuidesSection({ area }: { area: Area }) {
 
   return (
     <div className="container grid max-w-3xl gap-8 py-6">
+      {isAdmin && (
+        <section>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 text-xl font-extrabold tracking-tight">
+              <ShieldCheck className="h-5 w-5 text-primary" /> Bara admin
+            </h2>
+            {!editing && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1 bg-card"
+                onClick={() => setEditing({ title: "", area: "admin", body: "", sortOrder: all.length })}
+              >
+                <Plus className="h-4 w-4" /> Ny admin-guide
+              </Button>
+            )}
+          </div>
+          <p className="mb-3 mt-1 text-sm text-muted-foreground">
+            Syns bara för admin – t.ex. koder och var nycklarna finns. Ge vidare till jouren vid behov.
+          </p>
+          {editing && !editing.id && editing.area === "admin" && <div className="mb-3">{editor}</div>}
+          {loading ? (
+            <Skeleton className="h-16 rounded-2xl" />
+          ) : adminGuides.length ? (
+            list(adminGuides)
+          ) : (
+            <p className="text-sm text-muted-foreground">Inga admin-guider ännu.</p>
+          )}
+        </section>
+      )}
+
       {isFunctionary && (
         <section>
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -140,9 +173,9 @@ export default function GuidesSection({ area }: { area: Area }) {
             )}
           </div>
           <p className="mb-3 mt-1 text-sm text-muted-foreground">
-            Syns bara för jourhavare – t.ex. förrådskod, hur man kopplar plogen och viktiga kontakter.
+            Syns bara för jourhavare – t.ex. hur man kopplar plogen och viktiga kontakter. Koder och nycklar läggs under "Bara admin".
           </p>
-          {editing && !editing.id && <div className="mb-3">{editor}</div>}
+          {editing && !editing.id && editing.area !== "admin" && <div className="mb-3">{editor}</div>}
           {loading ? (
             <Skeleton className="h-24 rounded-2xl" />
           ) : dutyGuides.length ? (

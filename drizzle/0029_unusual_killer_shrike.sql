@@ -1,0 +1,1 @@
+ALTER TABLE `guides` MODIFY COLUMN `area` enum('publik','alla','hockeyrink','skidspar','admin') NOT NULL DEFAULT 'alla';
