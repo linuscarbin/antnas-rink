@@ -42,7 +42,7 @@ const TEMPLATES: { title: string; area: Area; body: string }[] = [
   },
   {
     title: "Förråd och nycklar",
-    area: "alla",
+    area: "admin",
     body: "## Förrådskod\n\n**Kod:** \n\n## Var finns nycklar?\n\n",
   },
   {
@@ -57,7 +57,7 @@ const TEMPLATES: { title: string; area: Area; body: string }[] = [
   },
 ];
 
-const ALL_AREAS: Area[] = ["publik", "alla", "hockeyrink", "skidspar"];
+const ALL_AREAS: Area[] = ["publik", "alla", "hockeyrink", "skidspar", "admin"];
 
 export default function AdminGuides() {
   const utils = trpc.useUtils();

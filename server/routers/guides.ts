@@ -5,11 +5,11 @@ import * as db from "../db";
 import { functionaryAreas } from "../_core/functionary";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 
-type GuideArea = "publik" | "alla" | "hockeyrink" | "skidspar";
+type GuideArea = "publik" | "alla" | "hockeyrink" | "skidspar" | "admin";
 
 const guideInput = z.object({
   title: z.string().trim().min(1).max(160),
-  area: z.enum(["publik", "alla", "hockeyrink", "skidspar"]),
+  area: z.enum(["publik", "alla", "hockeyrink", "skidspar", "admin"]),
   body: z.string().max(20000),
   sortOrder: z.number().int().min(0).max(1000).default(0),
 });
@@ -22,6 +22,9 @@ type Viewer = { id: number; role: "user" | "admin" };
  */
 async function assertCanWrite(user: Viewer, area: GuideArea) {
   if (user.role === "admin") return;
+  if (area === "admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Bara admin kan skriva guider som bara admin ser." });
+  }
   const areas = await functionaryAreas(user);
   const isFunctionary = areas.hockeyrink || areas.skidspar;
   const ok =
@@ -39,7 +42,9 @@ async function assertCanWrite(user: Viewer, area: GuideArea) {
 async function assertCanEdit(user: Viewer, id: number) {
   const guide = await db.getGuide(id);
   if (!guide) throw new TRPCError({ code: "NOT_FOUND", message: "Guiden finns inte." });
-  if (user.role !== "admin" && guide.createdByUserId !== user.id) {
+  // "Bara admin" guides (codes, keys) are out of reach for everyone else,
+  // even the one who first wrote them.
+  if (user.role !== "admin" && (guide.area === "admin" || guide.createdByUserId !== user.id)) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "Du kan bara ändra guider du själv har skrivit.",
@@ -55,7 +60,8 @@ export const guidesRouter = router({
     return rows.filter((g) => g.area === "publik");
   }),
 
-  // Functionaries: guides for their areas + "alla" + public tips, with
+  // Functionaries: guides for their areas + "alla" + public tips (admins
+  // also "Bara admin"), with
   // `canEdit`. Others get an empty list — guides may contain codes and phones.
   list: protectedProcedure.query(async ({ ctx }) => {
     const areas = await functionaryAreas(ctx.user);
@@ -63,7 +69,11 @@ export const guidesRouter = router({
     const isAdmin = ctx.user.role === "admin";
     const rows = await db.listGuides();
     return rows
-      .filter((g) => g.area === "alla" || g.area === "publik" || areas[g.area])
+      .filter((g) =>
+        g.area === "admin"
+          ? isAdmin // codes and keys: admins only
+          : g.area === "alla" || g.area === "publik" || areas[g.area]
+      )
       .map((g) => ({ ...g, canEdit: isAdmin || g.createdByUserId === ctx.user.id }));
   }),
 
