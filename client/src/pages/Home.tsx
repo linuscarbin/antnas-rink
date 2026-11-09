@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getLoginUrl } from "@/const";
 import { timeAgo } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
+import { FEATURES } from "@shared/const";
 import TeamChat from "@/components/TeamChat";
 import { SponsorSpotlight } from "@/components/Sponsors";
 import CheckinWidget from "@/components/CheckinWidget";
@@ -169,7 +170,7 @@ export default function Home() {
   const { isAuthenticated, isRinkFunctionary } = useAuth();
   const tabs = [
     { id: "oversikt" as const, label: "Översikt", icon: Snowflake },
-    { id: "boka" as const, label: "Boka", icon: CalendarDays },
+    ...(FEATURES.booking ? [{ id: "boka" as const, label: "Boka", icon: CalendarDays }] : []),
     { id: "jour" as const, label: "Jour", icon: Users },
     { id: "info" as const, label: "Info", icon: BookOpen },
     ...(isRinkFunctionary ? [{ id: "kostnader" as const, label: "Kostnader", icon: Receipt }] : []),
@@ -261,7 +262,7 @@ export default function Home() {
     <SiteLayout>
       <HubTabs title="Rinken" tabs={tabs} value={tab} onChange={setTab} />
 
-      {tab === "boka" && <BookingSection />}
+      {FEATURES.booking && tab === "boka" && <BookingSection />}
 
       {tab === "jour" && (
         <div className="container grid gap-10 py-6">
@@ -316,8 +317,13 @@ export default function Home() {
                   : null
               }
             />
+            {/* Skötseln först: veckans jourlag bredvid statusen. */}
             <div>
-              <CheckinWidget area="hockeyrink" />
+              {FEATURES.checkins ? (
+                <CheckinWidget area="hockeyrink" />
+              ) : (
+                <ThisWeekDuty area="hockeyrink" href="/?flik=jour" />
+              )}
             </div>
             {nextEvent && (
               <div className="sm:col-span-2">
@@ -327,8 +333,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <SponsorSpotlight area="hockeyrink" />
 
       <div className="container py-8 grid gap-6 lg:grid-cols-3">
         {/* Status cards */}
@@ -435,7 +439,7 @@ export default function Home() {
 
           {!isAuthenticated && (
             <div className="sm:col-span-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4 text-sm text-muted-foreground">
-              Logga in för att boka och skriva på anslagstavlan.{" "}
+              {FEATURES.booking ? "Logga in för att boka och skriva på anslagstavlan." : "Logga in för att skriva på anslagstavlan."}{" "}
               <button
                 className="font-semibold text-primary underline"
                 onClick={() => (window.location.href = getLoginUrl())}
@@ -526,7 +530,7 @@ export default function Home() {
           </Link>
 
           {/* This week's duty */}
-          <ThisWeekDuty area="hockeyrink" href="/?flik=jour" />
+          {FEATURES.checkins && <ThisWeekDuty area="hockeyrink" href="/?flik=jour" />}
 
           <Leaderboard
             title="Insatser i säsong"
@@ -536,6 +540,9 @@ export default function Home() {
           />
         </div>
       </div>
+      {/* Sponsors after the duty tools, so functionaries reach those first. */}
+      <SponsorSpotlight area="hockeyrink" />
+      <div className="pb-8" />
       </>
       )}
     </SiteLayout>

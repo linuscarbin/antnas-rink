@@ -100,7 +100,7 @@ export function SponsorSpotlight({ area }: { area: Area }) {
   const main = (data ?? []).filter((s) => s.tier === "huvud" && (s.area === "alla" || s.area === area));
   if (!main.length) return null;
   return (
-    <section className="container pt-8">
+    <section className="container">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
         <Heart className="h-3.5 w-3.5 text-primary" />
         {area === "hockeyrink" ? "Rinken sponsras av" : "Spåret sponsras av"}

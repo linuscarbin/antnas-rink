@@ -38,7 +38,7 @@ const TABS = [
   { id: "docs", label: "Dokument", icon: FolderOpen },
   { id: "contacts", label: "Kontakter", icon: Users },
   { id: "sponsors", label: "Sponsorer", icon: Heart },
-  { id: "bookings", label: "Bokningar", icon: CalendarRange },
+  ...(FEATURES.booking ? [{ id: "bookings", label: "Bokningar", icon: CalendarRange } as const] : []),
   { id: "users", label: "Användare", icon: UsersRound },
   { id: "settings", label: "Inställningar", icon: Settings },
 ] as const;

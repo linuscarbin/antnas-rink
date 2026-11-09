@@ -11,4 +11,8 @@ export const NOT_ADMIN_ERR_MSG = 'Bara admin kan göra detta.';
  */
 export const FEATURES = {
   bilbingo: false,
+  /** "Jag är på rinken nu" check-ins and the "ett gäng är på väg" push. */
+  checkins: false,
+  /** Booking the rink (the Boka tab). */
+  booking: false,
 } as const;

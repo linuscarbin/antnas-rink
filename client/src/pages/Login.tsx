@@ -204,7 +204,7 @@ export default function Login() {
 
           {mode === "register" && (
             <p className="text-xs text-muted-foreground">
-              Med ett konto kan du boka rinken och skriva på anslagstavlan. Är du
+              Med ett konto kan du skriva på anslagstavlan. Är du
               med i ett jourlag lägger en admin till dig där.
             </p>
           )}

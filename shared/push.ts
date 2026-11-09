@@ -1,4 +1,5 @@
 // Push-notification topics and pure helpers shared by client and server.
+import { FEATURES } from "./const";
 
 export const PUBLIC_TOPICS = ["rink_plogad", "rink_spolad", "track_draget", "group", "rink_closed"] as const;
 export const DUTY_TOPICS = ["duty_chat", "duty_jobs", "duty_reminder", "snow_alert", "duty_conflict"] as const;
@@ -18,8 +19,13 @@ export const TOPIC_INFO: Record<PushTopic, { label: string; hint: string }> = {
   duty_conflict: { label: "Förhinder i jouren", hint: "När någon behöver ersättare" },
 };
 
+/** Public topics offered right now ("ett gäng är på väg" needs check-ins). */
+export const VISIBLE_PUBLIC_TOPICS: PushTopic[] = PUBLIC_TOPICS.filter((t) => t !== "group" || FEATURES.checkins);
+
 /** Default picks the first time a device turns on notifications. */
-export const DEFAULT_PUBLIC_TOPICS: PushTopic[] = ["rink_plogad", "rink_spolad", "group", "rink_closed"];
+export const DEFAULT_PUBLIC_TOPICS: PushTopic[] = (["rink_plogad", "rink_spolad", "group", "rink_closed"] as PushTopic[]).filter(
+  (t) => VISIBLE_PUBLIC_TOPICS.includes(t)
+);
 /** Functionaries do the work themselves, so "a group is coming" is off. */
 export const DEFAULT_FUNCTIONARY_TOPICS: PushTopic[] = ["rink_closed", ...DUTY_TOPICS];
 

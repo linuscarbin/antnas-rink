@@ -1,3 +1,4 @@
+import { FEATURES } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "../db";
@@ -63,6 +64,7 @@ export const checkinsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!FEATURES.checkins) throw new TRPCError({ code: "FORBIDDEN", message: "Incheckning är avstängd just nu." });
       rateLimit(ctx.req.ip ?? "unknown");
       const now = Date.now();
       const arrive = input.arriveAt ?? now;
